@@ -15,71 +15,171 @@
   <button class="btn-ghost icon-btn" id="btnSair">Sair</button>
 </div>
 
+<div class="tabs-bar">
+  <button class="tab-btn active" data-tab="clientes">Clientes</button>
+  <button class="tab-btn" data-tab="servidores">Servidores</button>
+  <button class="tab-btn" data-tab="mensagens">Mensagens</button>
+</div>
+
 <div class="container">
 
-  <!-- RESUMO -->
-  <div class="summary-grid" id="summaryGrid">
-    <div class="summary-card ok">
-      <div class="label">Ativos</div>
-      <div class="value" id="countAtivos">0</div>
+  <!-- ABA: CLIENTES -->
+  <div class="tab-panel" id="tab-clientes">
+
+    <div class="summary-grid" id="summaryGrid">
+      <div class="summary-card ok">
+        <div class="label">Ativos</div>
+        <div class="value" id="countAtivos">0</div>
+      </div>
+      <div class="summary-card warn">
+        <div class="label">Vencendo (3 dias)</div>
+        <div class="value" id="countVencendo">0</div>
+      </div>
+      <div class="summary-card danger">
+        <div class="label">Vencidos</div>
+        <div class="value" id="countVencidos">0</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Notificações Ativas</div>
+        <div class="value" id="countNotif">0/0</div>
+      </div>
     </div>
-    <div class="summary-card warn">
-      <div class="label">Vencendo (3 dias)</div>
-      <div class="value" id="countVencendo">0</div>
+
+    <div class="section-header">
+      <h3>Resumo por Servidor</h3>
     </div>
-    <div class="summary-card danger">
-      <div class="label">Vencidos</div>
-      <div class="value" id="countVencidos">0</div>
+    <div class="table-wrap" style="margin-bottom: 24px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Servidor</th>
+            <th>Ativos</th>
+            <th>Vencendo</th>
+            <th>Vencidos</th>
+            <th>Receita Ativa</th>
+            <th>Receita em Atraso</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaResumoServidor"></tbody>
+      </table>
+      <div class="empty-state" id="emptyResumoServidor" style="display:none;">
+        Cadastre servidores e clientes para ver o resumo aqui.
+      </div>
     </div>
-    <div class="summary-card">
-      <div class="label">Notificações Ativas</div>
-      <div class="value" id="countNotif">0/0</div>
+
+    <div class="toolbar">
+      <div class="toolbar-filters">
+        <input type="search" id="buscaInput" placeholder="Buscar cliente...">
+        <select id="filtroServidor">
+          <option value="">Todos os servidores</option>
+        </select>
+        <select id="filtroStatus">
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativo</option>
+          <option value="vencendo">Vencendo</option>
+          <option value="vencido">Vencido</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-ghost icon-btn" id="btnNotificarSelecionados">📣 Notificar Selecionados</button>
+        <button class="btn btn-amber" id="btnNovoCliente" style="width:auto; padding:11px 20px;">+ Novo Cliente</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="checkTodos"></th>
+            <th>Nome</th>
+            <th>Servidor</th>
+            <th>Valor</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+            <th>Notif.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabelaClientes"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        Nenhum cliente cadastrado ainda. Clique em "+ Novo Cliente" pra começar.
+      </div>
     </div>
   </div>
 
-  <!-- TOOLBAR -->
-  <div class="toolbar">
-    <div class="toolbar-filters">
-      <input type="search" id="buscaInput" placeholder="Buscar cliente...">
-      <select id="filtroServidor">
-        <option value="">Todos os servidores</option>
-      </select>
-      <select id="filtroStatus">
-        <option value="">Todos os status</option>
-        <option value="ativo">Ativo</option>
-        <option value="vencendo">Vencendo</option>
-        <option value="vencido">Vencido</option>
-      </select>
+  <!-- ABA: SERVIDORES -->
+  <div class="tab-panel hidden" id="tab-servidores">
+    <div class="toolbar">
+      <div></div>
+      <button class="btn btn-amber" id="btnNovoServidor" style="width:auto; padding:11px 20px;">+ Novo Servidor</button>
     </div>
-    <button class="btn btn-amber" id="btnNovoCliente" style="width:auto; padding:11px 20px;">+ Novo Cliente</button>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome do Servidor</th>
+            <th>Valor Padrão do Plano</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabelaServidores"></tbody>
+      </table>
+      <div class="empty-state" id="emptyServidores" style="display:none;">
+        Nenhum servidor cadastrado ainda. Cadastre um servidor pra agilizar o cadastro de clientes.
+      </div>
+    </div>
   </div>
 
-  <!-- TABELA -->
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Servidor</th>
-          <th>Valor</th>
-          <th>Vencimento</th>
-          <th>Status</th>
-          <th>Notif.</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tabelaClientes">
-        <!-- preenchido via JS -->
-      </tbody>
-    </table>
-    <div class="empty-state" id="emptyState" style="display:none;">
-      Nenhum cliente cadastrado ainda. Clique em "+ Novo Cliente" pra começar.
+  <!-- ABA: MENSAGENS -->
+  <div class="tab-panel hidden" id="tab-mensagens">
+    <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 20px; line-height: 1.6;">
+      Personalize as mensagens automáticas de vencimento. Variáveis disponíveis:
+      <code>{nome}</code> <code>{data_vencimento}</code> <code>{valor_plano}</code> <code>{servidor}</code> <code>{dias_restantes}</code> <code>{status}</code>
+    </p>
+
+    <div class="msg-card">
+      <h3>3 dias antes do vencimento</h3>
+      <div class="field">
+        <label>Mensagem Push</label>
+        <input type="text" id="msg3diasPush">
+      </div>
+      <div class="field">
+        <label>Mensagem WhatsApp (pré-preenchida)</label>
+        <input type="text" id="msg3diasWhats">
+      </div>
     </div>
+
+    <div class="msg-card">
+      <h3>No dia do vencimento</h3>
+      <div class="field">
+        <label>Mensagem Push</label>
+        <input type="text" id="msgHojePush">
+      </div>
+      <div class="field">
+        <label>Mensagem WhatsApp (pré-preenchida)</label>
+        <input type="text" id="msgHojeWhats">
+      </div>
+    </div>
+
+    <div class="msg-card">
+      <h3>Após vencido (1, 2 e 3 dias)</h3>
+      <div class="field">
+        <label>Mensagem Push</label>
+        <input type="text" id="msgVencidoPush">
+      </div>
+      <div class="field">
+        <label>Mensagem WhatsApp (pré-preenchida)</label>
+        <input type="text" id="msgVencidoWhats">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnSalvarMensagens" style="max-width: 240px;">Salvar Mensagens</button>
   </div>
 
 </div>
 
-<!-- MODAL CADASTRO/EDIÇÃO -->
+<!-- MODAL CADASTRO/EDIÇÃO DE CLIENTE -->
 <div class="modal-overlay hidden" id="modalCliente">
   <div class="modal">
     <h2 id="modalTitulo">Novo Cliente</h2>
@@ -99,7 +199,9 @@
     </div>
     <div class="field">
       <label>Servidor</label>
-      <input type="text" id="fServidor" placeholder="Ex: Servidor 01">
+      <select id="fServidor">
+        <option value="">Selecione um servidor</option>
+      </select>
     </div>
     <div class="field">
       <label>Valor do plano (R$)</label>
@@ -109,10 +211,71 @@
       <label>Data de vencimento</label>
       <input type="date" id="fVencimento">
     </div>
+    <div class="field">
+      <label>Usuário (acesso IPTV)</label>
+      <input type="text" id="fUsuario" placeholder="usuário do painel/app">
+    </div>
+    <div class="field">
+      <label>Senha (acesso IPTV)</label>
+      <input type="text" id="fSenha" placeholder="senha do painel/app">
+    </div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnCancelarModal">Cancelar</button>
       <button class="btn btn-primary" id="btnSalvarCliente">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRO DE SERVIDOR -->
+<div class="modal-overlay hidden" id="modalServidor">
+  <div class="modal">
+    <h2 id="modalServidorTitulo">Novo Servidor</h2>
+    <input type="hidden" id="servidorId">
+    <div class="field">
+      <label>Nome do servidor</label>
+      <input type="text" id="fServidorNome" placeholder="Ex: Servidor 01">
+    </div>
+    <div class="field">
+      <label>Valor padrão do plano (R$)</label>
+      <input type="text" id="fServidorValor" placeholder="40.00">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancelarModalServidor">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarServidor">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOTIFICAÇÃO MANUAL -->
+<div class="modal-overlay hidden" id="modalNotificar">
+  <div class="modal">
+    <h2>Enviar Notificação Manual</h2>
+    <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;" id="contadorSelecionados">0 clientes selecionados</p>
+
+    <div class="field">
+      <label>Canal</label>
+      <select id="canalNotificacao">
+        <option value="push">Só Push</option>
+        <option value="email">Só E-mail</option>
+        <option value="ambos">Push + E-mail</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Mensagem (push e corpo do e-mail)</label>
+      <input type="text" id="mensagemManual" placeholder="Ex: Olá {nome}, promoção especial de renovação essa semana!">
+    </div>
+    <div class="field" id="campoAssuntoEmail">
+      <label>Assunto do e-mail</label>
+      <input type="text" id="assuntoManual" placeholder="Ex: Oferta especial pra você">
+    </div>
+    <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 10px;">
+      Variáveis disponíveis: <code>{nome}</code> <code>{data_vencimento}</code> <code>{valor_plano}</code> <code>{servidor}</code>
+    </p>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancelarNotificar">Cancelar</button>
+      <button class="btn btn-primary" id="btnEnviarNotificacaoManual">Enviar</button>
     </div>
   </div>
 </div>
