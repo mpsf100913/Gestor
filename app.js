@@ -139,6 +139,8 @@ function renderizarTudo() {
   atualizarFiltroServidores();
   atualizarSelectServidorModal();
   atualizarSelectPlanoModal();
+  atualizarFiltroServidorMassa();
+  atualizarContadorMassa();
   renderizarTabelaServidores();
   renderizarTabelaPlanos();
   renderizarTabela();
@@ -639,28 +641,36 @@ function preencherFormMensagens() {
 
   document.getElementById('msg3diasPush').value = t3.push;
   document.getElementById('msg3diasWhats').value = t3.whatsapp;
+  document.getElementById('msg3diasImagem').value = t3.imagem || '';
   document.getElementById('msgHojePush').value = th.push;
   document.getElementById('msgHojeWhats').value = th.whatsapp;
+  document.getElementById('msgHojeImagem').value = th.imagem || '';
   document.getElementById('msgVencidoPush').value = tv.push;
   document.getElementById('msgVencidoWhats').value = tv.whatsapp;
+  document.getElementById('msgVencidoImagem').value = tv.imagem || '';
   document.getElementById('msgRenovacao').value = templates.renovacao || TEMPLATE_RENOVACAO_PADRAO;
+  document.getElementById('msgRenovacaoImagem').value = templates.imagemRenovacao || '';
 }
 
 document.getElementById('btnSalvarMensagens').addEventListener('click', async () => {
   const novosTemplates = {
     aviso_3_dias: {
       push: document.getElementById('msg3diasPush').value.trim(),
-      whatsapp: document.getElementById('msg3diasWhats').value.trim()
+      whatsapp: document.getElementById('msg3diasWhats').value.trim(),
+      imagem: document.getElementById('msg3diasImagem').value.trim()
     },
     aviso_hoje: {
       push: document.getElementById('msgHojePush').value.trim(),
-      whatsapp: document.getElementById('msgHojeWhats').value.trim()
+      whatsapp: document.getElementById('msgHojeWhats').value.trim(),
+      imagem: document.getElementById('msgHojeImagem').value.trim()
     },
     aviso_vencido: {
       push: document.getElementById('msgVencidoPush').value.trim(),
-      whatsapp: document.getElementById('msgVencidoWhats').value.trim()
+      whatsapp: document.getElementById('msgVencidoWhats').value.trim(),
+      imagem: document.getElementById('msgVencidoImagem').value.trim()
     },
-    renovacao: document.getElementById('msgRenovacao').value.trim()
+    renovacao: document.getElementById('msgRenovacao').value.trim(),
+    imagemRenovacao: document.getElementById('msgRenovacaoImagem').value.trim()
   };
 
   try {
@@ -893,6 +903,91 @@ document.getElementById('btnEnviarNotificacaoManual').addEventListener('click', 
   } finally {
     btn.disabled = false;
     btn.textContent = 'Enviar';
+  }
+});
+
+// ============================================
+// NOTIFICAÇÃO EM MASSA (POR FILTRO)
+// ============================================
+function atualizarFiltroServidorMassa() {
+  const select = document.getElementById('massaFiltroServidor');
+  const atual = select.value;
+  const nomes = Object.values(servidores).map(s => s.nome).filter(Boolean);
+  select.innerHTML = '<option value="">Todos os servidores</option>' +
+    nomes.map(n => `<option value="${n}">${n}</option>`).join('');
+  select.value = atual;
+}
+
+function clientesFiltradosMassa() {
+  const filtroServidor = document.getElementById('massaFiltroServidor').value;
+  const filtroStatus = document.getElementById('massaFiltroStatus').value;
+
+  return Object.entries(clientes).filter(([id, c]) => {
+    if (!c.nome) return false;
+    const status = statusCliente(c.vencimento);
+    if (filtroServidor && c.servidor !== filtroServidor) return false;
+    if (filtroStatus && status !== filtroStatus) return false;
+    return true;
+  });
+}
+
+function atualizarContadorMassa() {
+  const lista = clientesFiltradosMassa();
+  document.getElementById('massaContador').textContent = `${lista.length} cliente(s) encontrado(s)`;
+}
+
+document.getElementById('massaFiltroServidor').addEventListener('change', atualizarContadorMassa);
+document.getElementById('massaFiltroStatus').addEventListener('change', atualizarContadorMassa);
+
+document.getElementById('massaCanal').addEventListener('change', (e) => {
+  document.getElementById('massaCampoAssunto').style.display = e.target.value === 'push' ? 'none' : 'block';
+});
+
+document.getElementById('btnDispararMassa').addEventListener('click', async () => {
+  const lista = clientesFiltradosMassa();
+  if (lista.length === 0) {
+    mostrarToast('Nenhum cliente corresponde a esse filtro.', true);
+    return;
+  }
+
+  const canal = document.getElementById('massaCanal').value;
+  const mensagem = document.getElementById('massaMensagem').value.trim();
+  const assunto = document.getElementById('massaAssunto').value.trim() || 'Aviso do seu plano IPTV';
+  const imagem = document.getElementById('massaImagem').value.trim();
+
+  if (!mensagem) {
+    mostrarToast('Escreva uma mensagem antes de disparar.', true);
+    return;
+  }
+
+  if (!confirm(`Confirma o envio para ${lista.length} cliente(s)?`)) return;
+
+  const btn = document.getElementById('btnDispararMassa');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const res = await fetch('/api/enviar-manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ids: lista.map(([id]) => id),
+        canal,
+        mensagem,
+        assunto,
+        imagem
+      })
+    });
+    const resultado = await res.json();
+    if (!res.ok || !resultado.ok) throw new Error(resultado.erro || 'Falha no envio');
+
+    mostrarToast(`Disparado para ${resultado.enviados} cliente(s).`);
+  } catch (err) {
+    mostrarToast('Erro ao disparar notificação em massa.', true);
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📣 Disparar para Grupo Filtrado';
   }
 });
 
