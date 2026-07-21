@@ -15,6 +15,7 @@ document.getElementById('btnSair').addEventListener('click', () => {
 // ============================================
 let clientes = {};
 let servidores = {};
+let planos = {};
 let templates = {};
 let selecionados = new Set();
 
@@ -114,13 +115,15 @@ function gerarId(prefixo) {
 // ============================================
 async function carregarTudo() {
   try {
-    const [dadosClientes, dadosServidores, dadosTemplates] = await Promise.all([
+    const [dadosClientes, dadosServidores, dadosPlanos, dadosTemplates] = await Promise.all([
       firebaseGet('clientes'),
       firebaseGet('servidores'),
+      firebaseGet('planos'),
       firebaseGet('config/templates')
     ]);
     clientes = dadosClientes || {};
     servidores = dadosServidores || {};
+    planos = dadosPlanos || {};
     templates = dadosTemplates || {};
     renderizarTudo();
     preencherFormMensagens();
@@ -133,7 +136,9 @@ async function carregarTudo() {
 function renderizarTudo() {
   atualizarFiltroServidores();
   atualizarSelectServidorModal();
+  atualizarSelectPlanoModal();
   renderizarTabelaServidores();
+  renderizarTabelaPlanos();
   renderizarTabela();
   renderizarResumo();
   renderizarResumoPorServidor();
@@ -156,9 +161,24 @@ function atualizarSelectServidorModal() {
   const atual = select.value;
   const entradas = Object.entries(servidores);
   select.innerHTML = '<option value="">Selecione um servidor</option>' +
-    entradas.map(([id, s]) => `<option value="${s.nome}" data-valor="${s.valorPadrao || ''}">${s.nome}</option>`).join('');
+    entradas.map(([id, s]) => `<option value="${s.nome}">${s.nome}</option>`).join('');
   select.value = atual;
 }
+
+function atualizarSelectPlanoModal() {
+  const select = document.getElementById('fPlano');
+  const atual = select.value;
+  const entradas = Object.entries(planos);
+  select.innerHTML = '<option value="">Selecione um plano</option>' +
+    entradas.map(([id, p]) => `<option value="${p.nome}" data-valor="${p.valor || ''}">${p.nome} — ${formatarValor(p.valor)}</option>`).join('');
+  select.value = atual;
+}
+
+document.getElementById('fPlano').addEventListener('change', (e) => {
+  const opcao = e.target.selectedOptions[0];
+  const valor = opcao?.dataset?.valor;
+  if (valor) document.getElementById('fValor').value = valor;
+});
 
 function renderizarTabela() {
   const busca = document.getElementById('buscaInput').value.toLowerCase();
@@ -312,7 +332,7 @@ document.getElementById('btnCancelarModal').addEventListener('click', fecharModa
 function abrirModal() {
   document.getElementById('modalTitulo').textContent = 'Novo Cliente';
   document.getElementById('clienteId').value = '';
-  ['fNome', 'fWhatsapp', 'fEmail', 'fServidor', 'fValor', 'fVencimento', 'fUsuario', 'fSenha'].forEach(id => {
+  ['fNome', 'fWhatsapp', 'fEmail', 'fServidor', 'fPlano', 'fValor', 'fVencimento', 'fUsuario', 'fSenha'].forEach(id => {
     document.getElementById(id).value = '';
   });
   modal.classList.remove('hidden');
@@ -327,6 +347,7 @@ function abrirEdicao(id) {
   document.getElementById('fWhatsapp').value = c.whatsapp || '';
   document.getElementById('fEmail').value = c.email || '';
   document.getElementById('fServidor').value = c.servidor || '';
+  document.getElementById('fPlano').value = c.plano || '';
   document.getElementById('fValor').value = c.valorPlano || '';
   document.getElementById('fVencimento').value = c.vencimento || '';
   document.getElementById('fUsuario').value = c.usuarioIptv || '';
@@ -343,6 +364,7 @@ document.getElementById('btnSalvarCliente').addEventListener('click', async () =
   const whatsapp = document.getElementById('fWhatsapp').value.trim();
   const email = document.getElementById('fEmail').value.trim();
   const servidor = document.getElementById('fServidor').value.trim();
+  const plano = document.getElementById('fPlano').value.trim();
   const valorPlano = document.getElementById('fValor').value.trim();
   const vencimento = document.getElementById('fVencimento').value;
   const usuarioIptv = document.getElementById('fUsuario').value.trim();
@@ -354,7 +376,7 @@ document.getElementById('btnSalvarCliente').addEventListener('click', async () =
     return;
   }
 
-  const dadosCliente = { nome, whatsapp, email, servidor, valorPlano, vencimento, usuarioIptv, senhaIptv };
+  const dadosCliente = { nome, whatsapp, email, servidor, plano, valorPlano, vencimento, usuarioIptv, senhaIptv };
 
   if (id && clientes[id] && clientes[id].fcmToken) {
     dadosCliente.fcmToken = clientes[id].fcmToken;
@@ -400,7 +422,6 @@ document.getElementById('btnNovoServidor').addEventListener('click', () => {
   document.getElementById('modalServidorTitulo').textContent = 'Novo Servidor';
   document.getElementById('servidorId').value = '';
   document.getElementById('fServidorNome').value = '';
-  document.getElementById('fServidorValor').value = '';
   modalServidor.classList.remove('hidden');
 });
 
@@ -414,13 +435,11 @@ function abrirEdicaoServidor(id) {
   document.getElementById('modalServidorTitulo').textContent = 'Editar Servidor';
   document.getElementById('servidorId').value = id;
   document.getElementById('fServidorNome').value = s.nome || '';
-  document.getElementById('fServidorValor').value = s.valorPadrao || '';
   modalServidor.classList.remove('hidden');
 }
 
 document.getElementById('btnSalvarServidor').addEventListener('click', async () => {
   const nome = document.getElementById('fServidorNome').value.trim();
-  const valorPadrao = document.getElementById('fServidorValor').value.trim();
   let id = document.getElementById('servidorId').value;
 
   if (!nome) {
@@ -428,7 +447,7 @@ document.getElementById('btnSalvarServidor').addEventListener('click', async () 
     return;
   }
 
-  const dados = { nome, valorPadrao };
+  const dados = { nome };
   if (!id) id = gerarId('srv');
 
   try {
@@ -475,7 +494,6 @@ function renderizarTabelaServidores() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${s.nome}</td>
-      <td>${formatarValor(s.valorPadrao)}</td>
       <td>
         <div class="row-actions">
           <button class="icon-btn" onclick="abrirEdicaoServidor('${id}')">Editar</button>
@@ -486,6 +504,112 @@ function renderizarTabelaServidores() {
     tbody.appendChild(tr);
   });
 }
+
+// ============================================
+// PLANOS — CRUD
+// ============================================
+const modalPlano = document.getElementById('modalPlano');
+
+document.getElementById('btnNovoPlano').addEventListener('click', () => {
+  document.getElementById('modalPlanoTitulo').textContent = 'Novo Plano';
+  document.getElementById('planoId').value = '';
+  document.getElementById('fPlanoNome').value = '';
+  document.getElementById('fPlanoValor').value = '';
+  modalPlano.classList.remove('hidden');
+});
+
+document.getElementById('btnCancelarModalPlano').addEventListener('click', () => {
+  modalPlano.classList.add('hidden');
+});
+
+function abrirEdicaoPlano(id) {
+  const p = planos[id];
+  if (!p) return;
+  document.getElementById('modalPlanoTitulo').textContent = 'Editar Plano';
+  document.getElementById('planoId').value = id;
+  document.getElementById('fPlanoNome').value = p.nome || '';
+  document.getElementById('fPlanoValor').value = p.valor || '';
+  modalPlano.classList.remove('hidden');
+}
+
+document.getElementById('btnSalvarPlano').addEventListener('click', async () => {
+  const nome = document.getElementById('fPlanoNome').value.trim();
+  const valor = document.getElementById('fPlanoValor').value.trim();
+  let id = document.getElementById('planoId').value;
+
+  if (!nome) {
+    mostrarToast('Informe o nome do plano.', true);
+    return;
+  }
+
+  const dados = { nome, valor };
+  if (!id) id = gerarId('pln');
+
+  try {
+    await firebasePatch(`planos/${id}`, dados);
+    planos[id] = dados;
+    modalPlano.classList.add('hidden');
+    renderizarTudo();
+    mostrarToast('Plano salvo com sucesso.');
+  } catch (err) {
+    mostrarToast('Erro ao salvar plano.', true);
+    console.error(err);
+  }
+});
+
+async function excluirPlano(id) {
+  const p = planos[id];
+  if (!p) return;
+  if (!confirm(`Excluir o plano "${p.nome}"? Isso não afeta clientes já cadastrados com esse plano.`)) return;
+
+  try {
+    await firebaseDelete(`planos/${id}`);
+    delete planos[id];
+    renderizarTudo();
+    mostrarToast('Plano excluído.');
+  } catch (err) {
+    mostrarToast('Erro ao excluir plano.', true);
+    console.error(err);
+  }
+}
+
+function renderizarTabelaPlanos() {
+  const tbody = document.getElementById('tabelaPlanos');
+  const empty = document.getElementById('emptyPlanos');
+  tbody.innerHTML = '';
+
+  const entradas = Object.entries(planos);
+  if (entradas.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  entradas.forEach(([id, p]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p.nome}</td>
+      <td>${formatarValor(p.valor)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" onclick="abrirEdicaoPlano('${id}')">Editar</button>
+          <button class="icon-btn" onclick="excluirPlano('${id}')">Excluir</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ============================================
+// RESUMO POR SERVIDOR — RECOLHÍVEL
+// ============================================
+document.getElementById('toggleResumoServidor').addEventListener('click', () => {
+  const conteudo = document.getElementById('conteudoResumoServidor');
+  const seta = document.getElementById('setaResumoServidor');
+  conteudo.classList.toggle('hidden');
+  seta.classList.toggle('open');
+});
 
 // ============================================
 // MENSAGENS — TEMPLATES
