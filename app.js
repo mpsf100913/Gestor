@@ -856,6 +856,10 @@ document.getElementById('btnNotificarSelecionados').addEventListener('click', ()
     return;
   }
   atualizarContadorSelecionados();
+  // Limpa os campos
+  document.getElementById('mensagemManual').value = '';
+  document.getElementById('assuntoManual').value = '';
+  document.getElementById('imagemNotificacaoManual').value = '';
   modalNotificar.classList.remove('hidden');
 });
 
@@ -871,6 +875,7 @@ document.getElementById('btnEnviarNotificacaoManual').addEventListener('click', 
   const canal = document.getElementById('canalNotificacao').value;
   const mensagem = document.getElementById('mensagemManual').value.trim();
   const assunto = document.getElementById('assuntoManual').value.trim() || 'Aviso do seu plano IPTV';
+  const imagem = document.getElementById('imagemNotificacaoManual').value.trim();
 
   if (!mensagem) {
     mostrarToast('Escreva uma mensagem antes de enviar.', true);
@@ -889,7 +894,8 @@ document.getElementById('btnEnviarNotificacaoManual').addEventListener('click', 
         ids: [...selecionados],
         canal,
         mensagem,
-        assunto
+        assunto,
+        imagem
       })
     });
     const resultado = await res.json();
