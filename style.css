@@ -375,6 +375,33 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   color: var(--text);
 }
 
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.collapsible-header:hover { border-color: var(--accent); }
+.collapsible-header h3 { margin: 0; }
+
+.collapse-arrow {
+  color: var(--accent);
+  font-size: 12px;
+  transition: transform 0.15s ease;
+  margin-left: auto;
+}
+
+.collapse-arrow.open { transform: rotate(90deg); }
+
+.collapsible-content { margin-top: 10px; }
+.collapsible-content.hidden { display: none; }
+
 /* ============================================
    MENSAGENS
    ============================================ */
