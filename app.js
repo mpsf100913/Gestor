@@ -224,6 +224,7 @@ function renderizarTabela() {
         <div class="row-actions">
           <button class="icon-btn" onclick="abrirEdicao('${id}')">Editar</button>
           <button class="icon-btn" onclick="abrirRenovacao('${id}')">Renovar</button>
+          <button class="icon-btn" onclick="abrirWhatsappRapido('${id}')">WhatsApp</button>
           <button class="icon-btn" onclick="enviarLinkAtivacao('${id}')">Enviar Link</button>
           <button class="icon-btn" onclick="confirmarExclusao('${id}')">Excluir</button>
         </div>
@@ -240,6 +241,20 @@ function renderizarTabela() {
     });
   });
 }
+
+document.getElementById('btnSelecionarFiltrados').addEventListener('click', () => {
+  const linhas = document.querySelectorAll('.check-cliente');
+  if (linhas.length === 0) {
+    mostrarToast('Nenhum cliente corresponde ao filtro atual.', true);
+    return;
+  }
+  linhas.forEach(chk => {
+    chk.checked = true;
+    selecionados.add(chk.dataset.id);
+  });
+  atualizarContadorSelecionados();
+  mostrarToast(`${linhas.length} cliente(s) selecionado(s) pelo filtro atual.`);
+});
 
 document.getElementById('checkTodos').addEventListener('change', (e) => {
   const linhas = document.querySelectorAll('.check-cliente');
@@ -658,6 +673,17 @@ document.getElementById('btnSalvarMensagens').addEventListener('click', async ()
   }
 });
 
+function substituirVariaveisCliente(template, c) {
+  const dias = calcularDiasRestantes(c.vencimento);
+  return (template || '')
+    .replace(/{nome}/g, c.nome || '')
+    .replace(/{data_vencimento}/g, formatarData(c.vencimento))
+    .replace(/{valor_plano}/g, c.valorPlano || '')
+    .replace(/{servidor}/g, c.servidor || '')
+    .replace(/{dias_restantes}/g, Math.abs(dias))
+    .replace(/{status}/g, dias < 0 ? 'vencido' : dias === 0 ? 'vence hoje' : 'vencendo');
+}
+
 // ============================================
 // ENVIO DO LINK DE ATIVAÇÃO VIA WHATSAPP
 // ============================================
@@ -681,6 +707,57 @@ function enviarLinkAtivacao(id) {
   const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
 
   window.open(url, '_blank');
+}
+
+// ============================================
+// WHATSAPP RÁPIDO — mensagens por status
+// ============================================
+const modalWhatsappRapido = document.getElementById('modalWhatsappRapido');
+let clienteWhatsappAtual = null;
+
+function abrirWhatsappRapido(id) {
+  const c = clientes[id];
+  if (!c) return;
+  if (!c.whatsapp) {
+    mostrarToast('Esse cliente não tem WhatsApp cadastrado.', true);
+    return;
+  }
+  clienteWhatsappAtual = id;
+  document.getElementById('whatsappNomeCliente').textContent = c.nome;
+  document.getElementById('whatsappMensagemCustom').value = '';
+  modalWhatsappRapido.classList.remove('hidden');
+}
+
+document.getElementById('btnFecharWhatsappRapido').addEventListener('click', () => {
+  modalWhatsappRapido.classList.add('hidden');
+});
+
+function enviarWhatsappRapido(tipo) {
+  const c = clientes[clienteWhatsappAtual];
+  if (!c) return;
+
+  let textoBase;
+  if (tipo === 'vencendo') {
+    textoBase = (templates.aviso_3_dias && templates.aviso_3_dias.whatsapp) || TEMPLATES_PADRAO.aviso_3_dias.whatsapp;
+  } else if (tipo === 'hoje') {
+    textoBase = (templates.aviso_hoje && templates.aviso_hoje.whatsapp) || TEMPLATES_PADRAO.aviso_hoje.whatsapp;
+  } else if (tipo === 'vencido') {
+    textoBase = (templates.aviso_vencido && templates.aviso_vencido.whatsapp) || TEMPLATES_PADRAO.aviso_vencido.whatsapp;
+  } else if (tipo === 'renovacao') {
+    textoBase = templates.renovacao || TEMPLATE_RENOVACAO_PADRAO;
+  } else {
+    textoBase = document.getElementById('whatsappMensagemCustom').value.trim();
+    if (!textoBase) {
+      mostrarToast('Digite uma mensagem antes de enviar.', true);
+      return;
+    }
+  }
+
+  const mensagem = substituirVariaveisCliente(textoBase, c);
+  const numero = normalizarWhatsapp(c.whatsapp);
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+  window.open(url, '_blank');
+  modalWhatsappRapido.classList.add('hidden');
 }
 
 // ============================================
