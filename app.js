@@ -960,6 +960,11 @@ document.getElementById('btnDispararMassa').addEventListener('click', async () =
     return;
   }
 
+  console.log('Disparando notificação em massa:', { lista: lista.length, canal, imagem });
+  if (!imagem) {
+    console.warn('⚠️ Nenhuma imagem fornecida (opcional)');
+  }
+
   if (!confirm(`Confirma o envio para ${lista.length} cliente(s)?`)) return;
 
   const btn = document.getElementById('btnDispararMassa');
