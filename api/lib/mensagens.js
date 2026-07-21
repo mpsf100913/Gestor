@@ -1,10 +1,8 @@
 // ============================================
 // FUNÇÕES COMPARTILHADAS — envio de push, e-mail e templates
 // ============================================
-
 const admin = require('firebase-admin');
 const { Resend } = require('resend');
-
 function inicializarFirebase() {
   if (!admin.apps.length) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -15,17 +13,14 @@ function inicializarFirebase() {
   }
   return admin;
 }
-
 const resend = new Resend(process.env.RESEND_API_KEY);
 const WHATSAPP_NUMERO = process.env.WHATSAPP_NUMERO;
 const EMAIL_REMETENTE = process.env.EMAIL_REMETENTE;
-
 function formatarData(vencimentoStr) {
   if (!vencimentoStr) return '';
   const [ano, mes, dia] = vencimentoStr.split('-');
   return `${dia}/${mes}/${ano}`;
 }
-
 function substituirVariaveis(template, cliente, dias) {
   return (template || '')
     .replace(/{nome}/g, cliente.nome || '')
@@ -35,15 +30,22 @@ function substituirVariaveis(template, cliente, dias) {
     .replace(/{dias_restantes}/g, dias !== undefined ? Math.abs(dias) : '')
     .replace(/{status}/g, dias !== undefined ? (dias < 0 ? 'vencido' : dias === 0 ? 'vence hoje' : 'vencendo') : '');
 }
-
-async function enviarPush(fcmToken, titulo, corpo, linkClick) {
+async function enviarPush(fcmToken, titulo, corpo, linkClick, opcoes) {
   if (!fcmToken) return false;
+  const { icone, imagem } = opcoes || {};
   try {
+    const webpushNotification = {};
+    if (icone) webpushNotification.icon = icone;
+    if (imagem) webpushNotification.image = imagem;
+
     await admin.messaging().send({
       token: fcmToken,
       notification: { title: titulo, body: corpo },
       data: { click_action: linkClick || '' },
-      webpush: { fcmOptions: { link: linkClick || '/' } }
+      webpush: {
+        notification: webpushNotification,
+        fcmOptions: { link: linkClick || '/' }
+      }
     });
     return true;
   } catch (err) {
@@ -51,7 +53,6 @@ async function enviarPush(fcmToken, titulo, corpo, linkClick) {
     return false;
   }
 }
-
 async function enviarEmail(destino, assunto, corpo) {
   if (!destino || !EMAIL_REMETENTE) return false;
   try {
@@ -67,11 +68,9 @@ async function enviarEmail(destino, assunto, corpo) {
     return false;
   }
 }
-
 function linkWhatsappSuporte(mensagem) {
   return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensagem)}`;
 }
-
 module.exports = {
   inicializarFirebase,
   formatarData,
