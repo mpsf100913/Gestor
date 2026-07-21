@@ -45,23 +45,50 @@ async function enviarPush(fcmToken, titulo, corpo, linkClick, imagemUrl) {
         title: titulo, 
         body: corpo
       },
-      data: { click_action: linkClick || '/' },
+      data: { 
+        click_action: linkClick || '/'
+      },
       webpush: { 
         fcmOptions: { link: linkClick || '/' },
-        notification: {}
+        notification: {
+          title: titulo,
+          body: corpo,
+          icon: '/icon-192.png',
+          badge: '/icon-192.png'
+        }
+      },
+      apns: {
+        payload: {
+          aps: {
+            alert: {
+              title: titulo,
+              body: corpo
+            }
+          }
+        }
       }
     };
 
     // Adiciona imagem se fornecida
-    if (imagemUrl) {
+    if (imagemUrl && imagemUrl.trim()) {
+      console.log('Enviando push com imagem:', imagemUrl);
       payload.notification.image = imagemUrl;
       payload.webpush.notification.image = imagemUrl;
+      payload.android = {
+        notification: {
+          imageUrl: imagemUrl
+        }
+      };
+      // Para Apple
+      payload.apns.payload.aps.mutableContent = true;
     }
 
+    console.log('Payload enviado:', JSON.stringify(payload, null, 2));
     await admin.messaging().send(payload);
     return true;
   } catch (err) {
     console.error('Erro ao enviar push:', err.message);
+    console.error('Stack:', err);
     return false;
   }
 }
