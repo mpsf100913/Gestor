@@ -20,6 +20,7 @@
   <button class="tab-btn" data-tab="servidores">Servidores</button>
   <button class="tab-btn" data-tab="planos">Planos</button>
   <button class="tab-btn" data-tab="mensagens">Mensagens</button>
+  <button class="tab-btn" data-tab="massa">Notificação em Massa</button>
 </div>
 
 <div class="container">
@@ -208,6 +209,62 @@
     </div>
 
     <button class="btn btn-primary" id="btnSalvarMensagens" style="max-width: 240px;">Salvar Mensagens</button>
+  </div>
+
+  <!-- ABA: NOTIFICAÇÃO EM MASSA -->
+  <div class="tab-panel hidden" id="tab-massa">
+    <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 20px; line-height: 1.6;">
+      Filtre um grupo de clientes e dispare push/e-mail personalizado só pra esse grupo — ideal pra campanhas de remarketing.
+    </p>
+
+    <div class="msg-card">
+      <h3>1. Filtrar clientes</h3>
+      <div class="field">
+        <label>Servidor</label>
+        <select id="massaFiltroServidor">
+          <option value="">Todos os servidores</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="massaFiltroStatus">
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativo</option>
+          <option value="vencendo">Vencendo (próximos 3 dias)</option>
+          <option value="vencido">Vencido</option>
+        </select>
+      </div>
+      <p style="color: var(--accent); font-size: 13px; font-weight: 600;" id="massaContador">0 cliente(s) encontrado(s)</p>
+    </div>
+
+    <div class="msg-card">
+      <h3>2. Montar mensagem</h3>
+      <div class="field">
+        <label>Canal</label>
+        <select id="massaCanal">
+          <option value="push">Só Push</option>
+          <option value="email">Só E-mail</option>
+          <option value="ambos">Push + E-mail</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Mensagem (push e corpo do e-mail)</label>
+        <input type="text" id="massaMensagem" placeholder="Ex: Olá {nome}, promoção especial de renovação essa semana!">
+      </div>
+      <div class="field" id="massaCampoAssunto">
+        <label>Assunto do e-mail</label>
+        <input type="text" id="massaAssunto" placeholder="Ex: Oferta especial pra você">
+      </div>
+      <div class="field">
+        <label>URL de imagem no push (opcional)</label>
+        <input type="text" id="massaImagem" placeholder="https://seusite.com/imagem-promocao.jpg">
+      </div>
+      <p style="color: var(--text-dim); font-size: 12px;">
+        Variáveis disponíveis: <code>{nome}</code> <code>{data_vencimento}</code> <code>{valor_plano}</code> <code>{servidor}</code>
+      </p>
+    </div>
+
+    <button class="btn btn-amber" id="btnDispararMassa" style="max-width: 260px;">📣 Disparar para Grupo Filtrado</button>
   </div>
 
 </div>
