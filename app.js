@@ -160,12 +160,6 @@ function atualizarSelectServidorModal() {
   select.value = atual;
 }
 
-document.getElementById('fServidor').addEventListener('change', (e) => {
-  const opcao = e.target.selectedOptions[0];
-  const valorPadrao = opcao?.dataset?.valor;
-  if (valorPadrao) document.getElementById('fValor').value = valorPadrao;
-});
-
 function renderizarTabela() {
   const busca = document.getElementById('buscaInput').value.toLowerCase();
   const filtroServidor = document.getElementById('filtroServidor').value;
