@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Admin — Cobrança IPTV</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-signal">● SINAL ATIVO</div>
+    <h1>Painel de Cobrança</h1>
+    <input type="password" id="pinInput" class="pin-input" maxlength="8" placeholder="••••" inputmode="numeric" autofocus>
+    <button class="btn btn-primary" id="btnEntrar">Entrar</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<script src="js/firebase-config.js"></script>
+<script>
+  const input = document.getElementById('pinInput');
+  const btn = document.getElementById('btnEntrar');
+  const errorMsg = document.getElementById('loginError');
+
+  function tentarEntrar() {
+    if (input.value === ADMIN_PIN) {
+      sessionStorage.setItem('admin_auth', 'ok');
+      window.location.href = 'admin.html';
+    } else {
+      errorMsg.textContent = 'PIN incorreto.';
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  btn.addEventListener('click', tentarEntrar);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') tentarEntrar();
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Admin — Cobrança IPTV</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand"><span class="dot"></span> Cobrança IPTV</div>
+  <button class="btn-ghost icon-btn" id="btnSair">Sair</button>
+</div>
+
+<div class="container">
+
+  <!-- RESUMO -->
+  <div class="summary-grid" id="summaryGrid">
+    <div class="summary-card ok">
+      <div class="label">Ativos</div>
+      <div class="value" id="countAtivos">0</div>
+    </div>
+    <div class="summary-card warn">
+      <div class="label">Vencendo (3 dias)</div>
+      <div class="value" id="countVencendo">0</div>
+    </div>
+    <div class="summary-card danger">
+      <div class="label">Vencidos</div>
+      <div class="value" id="countVencidos">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Notificações Ativas</div>
+      <div class="value" id="countNotif">0/0</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-filters">
+      <input type="search" id="buscaInput" placeholder="Buscar cliente...">
+      <select id="filtroServidor">
+        <option value="">Todos os servidores</option>
+      </select>
+      <select id="filtroStatus">
+        <option value="">Todos os status</option>
+        <option value="ativo">Ativo</option>
+        <option value="vencendo">Vencendo</option>
+        <option value="vencido">Vencido</option>
+      </select>
+    </div>
+    <button class="btn btn-amber" id="btnNovoCliente" style="width:auto; padding:11px 20px;">+ Novo Cliente</button>
+  </div>
+
+  <!-- TABELA -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Servidor</th>
+          <th>Valor</th>
+          <th>Vencimento</th>
+          <th>Status</th>
+          <th>Notif.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tabelaClientes">
+        <!-- preenchido via JS -->
+      </tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      Nenhum cliente cadastrado ainda. Clique em "+ Novo Cliente" pra começar.
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL CADASTRO/EDIÇÃO -->
+<div class="modal-overlay hidden" id="modalCliente">
+  <div class="modal">
+    <h2 id="modalTitulo">Novo Cliente</h2>
+    <input type="hidden" id="clienteId">
+
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" id="fNome" placeholder="Nome do cliente">
+    </div>
+    <div class="field">
+      <label>WhatsApp</label>
+      <input type="text" id="fWhatsapp" placeholder="55 21 90000-0000">
+    </div>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="text" id="fEmail" placeholder="cliente@email.com">
+    </div>
+    <div class="field">
+      <label>Servidor</label>
+      <input type="text" id="fServidor" placeholder="Ex: Servidor 01">
+    </div>
+    <div class="field">
+      <label>Valor do plano (R$)</label>
+      <input type="text" id="fValor" placeholder="40.00">
+    </div>
+    <div class="field">
+      <label>Data de vencimento</label>
+      <input type="date" id="fVencimento">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancelarModal">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarCliente">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
