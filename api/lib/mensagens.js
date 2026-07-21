@@ -36,15 +36,29 @@ function substituirVariaveis(template, cliente, dias) {
     .replace(/{status}/g, dias !== undefined ? (dias < 0 ? 'vencido' : dias === 0 ? 'vence hoje' : 'vencendo') : '');
 }
 
-async function enviarPush(fcmToken, titulo, corpo, linkClick) {
+async function enviarPush(fcmToken, titulo, corpo, linkClick, imagemUrl) {
   if (!fcmToken) return false;
   try {
-    await admin.messaging().send({
+    const payload = {
       token: fcmToken,
-      notification: { title: titulo, body: corpo },
-      data: { click_action: linkClick || '' },
-      webpush: { fcmOptions: { link: linkClick || '/' } }
-    });
+      notification: { 
+        title: titulo, 
+        body: corpo
+      },
+      data: { click_action: linkClick || '/' },
+      webpush: { 
+        fcmOptions: { link: linkClick || '/' },
+        notification: {}
+      }
+    };
+
+    // Adiciona imagem se fornecida
+    if (imagemUrl) {
+      payload.notification.image = imagemUrl;
+      payload.webpush.notification.image = imagemUrl;
+    }
+
+    await admin.messaging().send(payload);
     return true;
   } catch (err) {
     console.error('Erro ao enviar push:', err.message);
