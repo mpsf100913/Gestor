@@ -146,6 +146,7 @@ function renderizarTabela() {
       <td>
         <div class="row-actions">
           <button class="icon-btn" onclick="abrirEdicao('${id}')">Editar</button>
+          <button class="icon-btn" onclick="enviarLinkAtivacao('${id}')">Enviar Link</button>
           <button class="icon-btn" onclick="confirmarExclusao('${id}')">Excluir</button>
         </div>
       </td>
@@ -256,6 +257,31 @@ async function confirmarExclusao(id) {
     mostrarToast('Erro ao excluir cliente.', true);
     console.error(err);
   }
+}
+
+// ============================================
+// ENVIO DO LINK DE ATIVAÇÃO VIA WHATSAPP
+// ============================================
+function normalizarWhatsapp(numero) {
+  let limpo = (numero || '').replace(/\D/g, ''); // remove tudo que não é número
+  if (!limpo.startsWith('55')) limpo = '55' + limpo; // garante DDI Brasil
+  return limpo;
+}
+
+function enviarLinkAtivacao(id) {
+  const c = clientes[id];
+  if (!c) return;
+  if (!c.whatsapp) {
+    mostrarToast('Esse cliente não tem WhatsApp cadastrado.', true);
+    return;
+  }
+
+  const linkAtivacao = `${window.location.origin}/ativar-notificacao.html?id=${id}`;
+  const mensagem = `Olá ${c.nome}! Para receber avisos automáticos do vencimento do seu plano, clique no link e ative as notificações: ${linkAtivacao}`;
+  const numero = normalizarWhatsapp(c.whatsapp);
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+
+  window.open(url, '_blank');
 }
 
 // ============================================
