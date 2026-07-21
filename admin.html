@@ -18,6 +18,7 @@
 <div class="tabs-bar">
   <button class="tab-btn active" data-tab="clientes">Clientes</button>
   <button class="tab-btn" data-tab="servidores">Servidores</button>
+  <button class="tab-btn" data-tab="planos">Planos</button>
   <button class="tab-btn" data-tab="mensagens">Mensagens</button>
 </div>
 
@@ -45,10 +46,11 @@
       </div>
     </div>
 
-    <div class="section-header">
+    <div class="section-header collapsible-header" id="toggleResumoServidor">
       <h3>Resumo por Servidor</h3>
+      <span class="collapse-arrow" id="setaResumoServidor">▸</span>
     </div>
-    <div class="table-wrap" style="margin-bottom: 24px;">
+    <div class="table-wrap collapsible-content hidden" id="conteudoResumoServidor" style="margin-bottom: 24px;">
       <table>
         <thead>
           <tr>
@@ -119,7 +121,6 @@
         <thead>
           <tr>
             <th>Nome do Servidor</th>
-            <th>Valor Padrão do Plano</th>
             <th></th>
           </tr>
         </thead>
@@ -127,6 +128,29 @@
       </table>
       <div class="empty-state" id="emptyServidores" style="display:none;">
         Nenhum servidor cadastrado ainda. Cadastre um servidor pra agilizar o cadastro de clientes.
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA: PLANOS -->
+  <div class="tab-panel hidden" id="tab-planos">
+    <div class="toolbar">
+      <div></div>
+      <button class="btn btn-amber" id="btnNovoPlano" style="width:auto; padding:11px 20px;">+ Novo Plano</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome do Plano</th>
+            <th>Valor (R$)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabelaPlanos"></tbody>
+      </table>
+      <div class="empty-state" id="emptyPlanos" style="display:none;">
+        Nenhum plano cadastrado ainda. Cadastre os planos (ex: Mensal, Trimestral) com seus valores.
       </div>
     </div>
   </div>
@@ -204,6 +228,12 @@
       </select>
     </div>
     <div class="field">
+      <label>Plano</label>
+      <select id="fPlano">
+        <option value="">Selecione um plano</option>
+      </select>
+    </div>
+    <div class="field">
       <label>Valor do plano (R$)</label>
       <input type="text" id="fValor" placeholder="40.00">
     </div>
@@ -236,13 +266,29 @@
       <label>Nome do servidor</label>
       <input type="text" id="fServidorNome" placeholder="Ex: Servidor 01">
     </div>
-    <div class="field">
-      <label>Valor padrão do plano (R$)</label>
-      <input type="text" id="fServidorValor" placeholder="40.00">
-    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnCancelarModalServidor">Cancelar</button>
       <button class="btn btn-primary" id="btnSalvarServidor">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRO DE PLANO -->
+<div class="modal-overlay hidden" id="modalPlano">
+  <div class="modal">
+    <h2 id="modalPlanoTitulo">Novo Plano</h2>
+    <input type="hidden" id="planoId">
+    <div class="field">
+      <label>Nome do plano</label>
+      <input type="text" id="fPlanoNome" placeholder="Ex: Mensal, Trimestral, Anual">
+    </div>
+    <div class="field">
+      <label>Valor (R$)</label>
+      <input type="text" id="fPlanoValor" placeholder="40.00">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancelarModalPlano">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarPlano">Salvar</button>
     </div>
   </div>
 </div>
