@@ -2,7 +2,7 @@
 // ENVIO MANUAL — push e/ou e-mail para clientes selecionados no painel admin
 // ============================================
 
-const { inicializarFirebase, substituirVariaveis, enviarPush, enviarEmail } = require('./lib/mensagens');
+const { inicializarFirebase, substituirVariaveis, enviarPush, enviarEmail, linkWhatsappSuporte } = require('./lib/mensagens');
 
 const admin = inicializarFirebase();
 const db = admin.database();
@@ -31,11 +31,12 @@ module.exports = async (req, res) => {
 
       const corpo = substituirVariaveis(mensagem, cliente);
       const tituloAssunto = substituirVariaveis(assunto || 'Aviso do seu plano IPTV', cliente);
+      const linkWhatsapp = linkWhatsappSuporte(corpo);
 
       let algumEnvio = false;
 
       if (canal === 'push' || canal === 'ambos') {
-        const ok = await enviarPush(cliente.fcmToken, tituloAssunto, corpo, undefined, imagem);
+        const ok = await enviarPush(cliente.fcmToken, tituloAssunto, corpo, linkWhatsapp, imagem);
         if (ok) algumEnvio = true;
       }
       if (canal === 'email' || canal === 'ambos') {
