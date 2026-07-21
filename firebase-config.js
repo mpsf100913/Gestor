@@ -6,12 +6,12 @@
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5Y2BMqHIBDAhZoHFwDzdG-UuvPR1-FcQ",
-  authDomain: "COLE_AQUI",
-  databaseURL: "COLE_AQUI", // ex: https://iptv-cobranca-default-rtdb.firebaseio.com
-  projectId: "COLE_AQUI",
-  storageBucket: "COLE_AQUI",
-  messagingSenderId: "COLE_AQUI",
-  appId: "COLE_AQUI"
+  authDomain: "gestor-22b13.firebaseapp.com",
+  databaseURL: "https://gestor-22b13-default-rtdb.firebaseio.com", // ex: https://iptv-cobranca-default-rtdb.firebaseio.com
+  projectId: "gestor-22b13",
+  storageBucket: "gestor-22b13.firebasestorage.app",
+  messagingSenderId: "124521158946",
+  appId: "1:124521158946:web:06ea51762e01c571512d7b"
 };
 
 // URL base do Realtime Database (usada nas chamadas REST via fetch/PATCH)
