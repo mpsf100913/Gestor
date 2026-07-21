@@ -34,6 +34,8 @@ const TEMPLATES_PADRAO = {
   }
 };
 
+const TEMPLATE_RENOVACAO_PADRAO = 'Boa notícia, {nome}! Sua renovação foi confirmada. Novo vencimento: {data_vencimento}.';
+
 // ============================================
 // TABS
 // ============================================
@@ -221,6 +223,7 @@ function renderizarTabela() {
       <td>
         <div class="row-actions">
           <button class="icon-btn" onclick="abrirEdicao('${id}')">Editar</button>
+          <button class="icon-btn" onclick="abrirRenovacao('${id}')">Renovar</button>
           <button class="icon-btn" onclick="enviarLinkAtivacao('${id}')">Enviar Link</button>
           <button class="icon-btn" onclick="confirmarExclusao('${id}')">Excluir</button>
         </div>
@@ -625,6 +628,7 @@ function preencherFormMensagens() {
   document.getElementById('msgHojeWhats').value = th.whatsapp;
   document.getElementById('msgVencidoPush').value = tv.push;
   document.getElementById('msgVencidoWhats').value = tv.whatsapp;
+  document.getElementById('msgRenovacao').value = templates.renovacao || TEMPLATE_RENOVACAO_PADRAO;
 }
 
 document.getElementById('btnSalvarMensagens').addEventListener('click', async () => {
@@ -640,7 +644,8 @@ document.getElementById('btnSalvarMensagens').addEventListener('click', async ()
     aviso_vencido: {
       push: document.getElementById('msgVencidoPush').value.trim(),
       whatsapp: document.getElementById('msgVencidoWhats').value.trim()
-    }
+    },
+    renovacao: document.getElementById('msgRenovacao').value.trim()
   };
 
   try {
@@ -677,6 +682,81 @@ function enviarLinkAtivacao(id) {
 
   window.open(url, '_blank');
 }
+
+// ============================================
+// RENOVAÇÃO DE CLIENTE
+// ============================================
+const modalRenovar = document.getElementById('modalRenovar');
+
+function abrirRenovacao(id) {
+  const c = clientes[id];
+  if (!c) return;
+  document.getElementById('renovarClienteId').value = id;
+  document.getElementById('renovarNomeCliente').textContent = c.nome;
+  document.getElementById('renovarVencimentoAtual').textContent = formatarData(c.vencimento);
+  document.getElementById('renovarNovaData').value = c.vencimento || '';
+  modalRenovar.classList.remove('hidden');
+}
+
+document.getElementById('btnCancelarRenovar').addEventListener('click', () => {
+  modalRenovar.classList.add('hidden');
+});
+
+function aplicarPeriodoRenovacao(dias) {
+  const id = document.getElementById('renovarClienteId').value;
+  const c = clientes[id];
+  if (!c) return;
+
+  // soma a partir do vencimento atual (ou de hoje, se já estiver vencido)
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const vencimentoAtual = new Date(c.vencimento + 'T00:00:00');
+  const base = vencimentoAtual > hoje ? vencimentoAtual : hoje;
+  base.setDate(base.getDate() + dias);
+
+  const novaDataStr = base.toISOString().split('T')[0];
+  document.getElementById('renovarNovaData').value = novaDataStr;
+}
+
+document.getElementById('btnConfirmarRenovacao').addEventListener('click', async () => {
+  const id = document.getElementById('renovarClienteId').value;
+  const novaData = document.getElementById('renovarNovaData').value;
+  const c = clientes[id];
+  if (!c || !novaData) {
+    mostrarToast('Selecione a nova data de vencimento.', true);
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirmarRenovacao');
+  btn.disabled = true;
+  btn.textContent = 'Renovando...';
+
+  try {
+    // atualiza a data e limpa a última notificação (pra voltar a poder avisar no próximo ciclo)
+    await firebasePatch(`clientes/${id}`, { vencimento: novaData, ultimaNotificacao: null });
+    clientes[id] = { ...c, vencimento: novaData, ultimaNotificacao: null };
+
+    // dispara a notificação de renovação (push + e-mail)
+    const res = await fetch('/api/notificar-renovacao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    const resultado = await res.json();
+    if (!res.ok || !resultado.ok) throw new Error(resultado.erro || 'Falha ao notificar');
+
+    modalRenovar.classList.add('hidden');
+    renderizarTudo();
+    mostrarToast('Cliente renovado e notificado com sucesso!');
+  } catch (err) {
+    mostrarToast('Renovação salva, mas houve erro ao notificar o cliente.', true);
+    console.error(err);
+    renderizarTudo();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Confirmar Renovação';
+  }
+});
 
 // ============================================
 // NOTIFICAÇÃO MANUAL (PUSH / E-MAIL)
