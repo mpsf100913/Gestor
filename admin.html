@@ -7,21 +7,6 @@
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  .massa-push-preview{
-    background: #f1f3f4; border-radius: 12px; padding: 12px; color:#202124;
-    font-family: Roboto, Arial, sans-serif;
-  }
-  .massa-push-app-row{ display:flex; align-items:center; gap:6px; font-size:11px; color:#5f6368; margin-bottom:6px; }
-  .massa-push-favicon{ width:14px; height:14px; border-radius:3px; background:#2dd4bf; }
-  .massa-push-body{ display:flex; gap:10px; }
-  .massa-push-icon{ width:40px; height:40px; border-radius:8px; background:#e0e0e0; flex-shrink:0; object-fit:cover; border:1px solid #dadce0; }
-  .massa-push-text{ flex:1; min-width:0; }
-  .massa-push-title{ font-size:13px; font-weight:600; margin:0 0 2px; }
-  .massa-push-msg{ font-size:12.5px; color:#3c4043; margin:0; line-height:1.35; }
-  .massa-push-image{ width:100%; height:110px; object-fit:cover; border-radius:8px; margin-top:8px; background:#e0e0e0; display:block; }
-  .massa-push-hint{ font-size:11px; color: var(--text-dim); margin-top:6px; font-style:italic; }
-</style>
 </head>
 <body>
 
@@ -35,7 +20,6 @@
   <button class="tab-btn" data-tab="servidores">Servidores</button>
   <button class="tab-btn" data-tab="planos">Planos</button>
   <button class="tab-btn" data-tab="mensagens">Mensagens</button>
-  <button class="tab-btn" data-tab="massa">Notificação em Massa</button>
 </div>
 
 <div class="container">
@@ -224,113 +208,6 @@
     </div>
 
     <button class="btn btn-primary" id="btnSalvarMensagens" style="max-width: 240px;">Salvar Mensagens</button>
-  </div>
-
-  <!-- ABA: NOTIFICAÇÃO EM MASSA -->
-  <div class="tab-panel hidden" id="tab-massa">
-
-    <div class="toolbar">
-      <div class="toolbar-filters">
-        <select id="filtroServidorMassa">
-          <option value="">Todos os servidores</option>
-        </select>
-        <select id="filtroStatusMassa">
-          <option value="">Todos os status</option>
-          <option value="ativo">Ativo</option>
-          <option value="vencendo">Vencendo</option>
-          <option value="vencido">Vencido</option>
-        </select>
-      </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn-ghost icon-btn" id="btnSelecionarFiltradosMassa">☑️ Selecionar Filtrados</button>
-        <button class="btn-ghost icon-btn" id="btnLimparSelecaoMassa">Limpar seleção</button>
-      </div>
-    </div>
-
-    <div class="table-wrap" style="max-height: 320px; overflow-y:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th>Nome</th>
-            <th>Servidor</th>
-            <th>Vencimento</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaClientesMassa"></tbody>
-      </table>
-      <div class="empty-state" id="emptyMassa" style="display:none;">
-        Nenhum cliente corresponde aos filtros selecionados.
-      </div>
-    </div>
-
-    <p style="color: var(--text-dim); font-size: 13px; margin: 16px 0;" id="contadorSelecionadosMassa">0 clientes selecionados</p>
-
-    <div style="display:grid; grid-template-columns: 1fr 320px; gap:20px;">
-      <div>
-        <div class="msg-card">
-          <h3>Mensagem</h3>
-          <div class="field">
-            <label>Canal</label>
-            <select id="canalMassa">
-              <option value="push">Só Push</option>
-              <option value="email">Só E-mail</option>
-              <option value="ambos">Push + E-mail</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Assunto do e-mail (se aplicável)</label>
-            <input type="text" id="assuntoMassa" placeholder="Ex: Oferta especial pra você">
-          </div>
-          <div class="field">
-            <label>Mensagem (push e corpo do e-mail)</label>
-            <input type="text" id="mensagemMassa" placeholder="Ex: Olá {nome}, promoção de renovação essa semana!">
-          </div>
-          <p style="color: var(--text-dim); font-size: 12px;">
-            Variáveis: <code>{nome}</code> <code>{data_vencimento}</code> <code>{valor_plano}</code> <code>{servidor}</code> <code>{dias_restantes}</code> <code>{status}</code>
-          </p>
-        </div>
-
-        <div class="msg-card">
-          <h3>Ícone e imagem (opcional)</h3>
-          <div class="field">
-            <label>URL do ícone (quadrado)</label>
-            <input type="text" id="iconeMassa" placeholder="https://seudominio.vercel.app/notif/icon.png">
-          </div>
-          <div class="field">
-            <label>URL da imagem grande (banner)</label>
-            <input type="text" id="imagemMassa" placeholder="https://seudominio.vercel.app/notif/banner.jpg">
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="msg-card">
-          <h3>Preview da Push</h3>
-          <div class="massa-push-preview">
-            <div class="massa-push-app-row">
-              <div class="massa-push-favicon"></div>
-              <span>seudominio.vercel.app · agora</span>
-            </div>
-            <div class="massa-push-body">
-              <img class="massa-push-icon" id="previewIconeMassa" src="" alt="">
-              <div class="massa-push-text">
-                <p class="massa-push-title" id="previewTituloMassa">Aviso do seu plano IPTV</p>
-                <p class="massa-push-msg" id="previewCorpoMassa">Sua mensagem aparece aqui.</p>
-              </div>
-            </div>
-            <img class="massa-push-image" id="previewImagemMassa" src="" style="display:none;">
-          </div>
-          <p class="massa-push-hint" id="hintSemImagemMassa">Sem imagem definida — só ícone e texto.</p>
-        </div>
-
-        <button class="btn btn-primary" id="btnDispararMassa" style="width:100%;" disabled>
-          Disparar Notificação
-        </button>
-      </div>
-    </div>
-
   </div>
 
 </div>
