@@ -18,7 +18,6 @@ let servidores = {};
 let planos = {};
 let templates = {};
 let selecionados = new Set();
-let selecionadosMassa = new Set();
 
 const TEMPLATES_PADRAO = {
   aviso_3_dias: {
@@ -138,13 +137,11 @@ async function carregarTudo() {
 
 function renderizarTudo() {
   atualizarFiltroServidores();
-  atualizarFiltroServidoresMassa();
   atualizarSelectServidorModal();
   atualizarSelectPlanoModal();
   renderizarTabelaServidores();
   renderizarTabelaPlanos();
   renderizarTabela();
-  renderizarTabelaMassa();
   renderizarResumo();
   renderizarResumoPorServidor();
 }
@@ -306,6 +303,7 @@ function renderizarResumoPorServidor() {
     clientesPorServidor[nomeServ].push(c);
   });
 
+  // garante que servidores cadastrados sem cliente também apareçam
   nomesServidores.forEach(n => { if (!clientesPorServidor[n]) clientesPorServidor[n] = []; });
 
   const nomes = Object.keys(clientesPorServidor);
@@ -425,7 +423,6 @@ async function confirmarExclusao(id) {
     await firebaseDelete(`clientes/${id}`);
     delete clientes[id];
     selecionados.delete(id);
-    selecionadosMassa.delete(id);
     renderizarTudo();
     mostrarToast('Cliente excluído.');
   } catch (err) {
@@ -787,6 +784,7 @@ function aplicarPeriodoRenovacao(dias) {
   const c = clientes[id];
   if (!c) return;
 
+  // soma a partir do vencimento atual (ou de hoje, se já estiver vencido)
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   const vencimentoAtual = new Date(c.vencimento + 'T00:00:00');
@@ -811,9 +809,11 @@ document.getElementById('btnConfirmarRenovacao').addEventListener('click', async
   btn.textContent = 'Renovando...';
 
   try {
+    // atualiza a data e limpa a última notificação (pra voltar a poder avisar no próximo ciclo)
     await firebasePatch(`clientes/${id}`, { vencimento: novaData, ultimaNotificacao: null });
     clientes[id] = { ...c, vencimento: novaData, ultimaNotificacao: null };
 
+    // dispara a notificação de renovação (push + e-mail)
     const res = await fetch('/api/notificar-renovacao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -893,169 +893,6 @@ document.getElementById('btnEnviarNotificacaoManual').addEventListener('click', 
   } finally {
     btn.disabled = false;
     btn.textContent = 'Enviar';
-  }
-});
-
-// ============================================
-// NOTIFICAÇÃO EM MASSA — aba separada
-// ============================================
-function atualizarFiltroServidoresMassa() {
-  const select = document.getElementById('filtroServidorMassa');
-  const atual = select.value;
-  const nomes = Object.values(servidores).map(s => s.nome).filter(Boolean);
-  select.innerHTML = '<option value="">Todos os servidores</option>' +
-    nomes.map(n => `<option value="${n}">${n}</option>`).join('');
-  select.value = atual;
-}
-
-function getClientesFiltradosMassa() {
-  const filtroServidor = document.getElementById('filtroServidorMassa').value;
-  const filtroStatus = document.getElementById('filtroStatusMassa').value;
-  return Object.entries(clientes).filter(([id, c]) => {
-    if (!c.nome) return false;
-    const status = statusCliente(c.vencimento);
-    if (filtroServidor && c.servidor !== filtroServidor) return false;
-    if (filtroStatus && status !== filtroStatus) return false;
-    return true;
-  });
-}
-
-function renderizarTabelaMassa() {
-  const filtrados = getClientesFiltradosMassa();
-  const tbody = document.getElementById('tabelaClientesMassa');
-  const empty = document.getElementById('emptyMassa');
-  tbody.innerHTML = '';
-
-  if (filtrados.length === 0) {
-    empty.style.display = 'block';
-  } else {
-    empty.style.display = 'none';
-  }
-
-  filtrados.forEach(([id, c]) => {
-    const status = statusCliente(c.vencimento);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="checkbox" class="check-cliente-massa" data-id="${id}" ${selecionadosMassa.has(id) ? 'checked' : ''}></td>
-      <td>${c.nome}</td>
-      <td>${c.servidor || '-'}</td>
-      <td>${formatarData(c.vencimento)}</td>
-      <td>${badgeHtml(status)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  document.querySelectorAll('.check-cliente-massa').forEach(chk => {
-    chk.addEventListener('change', (e) => {
-      const id = e.target.dataset.id;
-      if (e.target.checked) selecionadosMassa.add(id); else selecionadosMassa.delete(id);
-      atualizarContadorMassa();
-    });
-  });
-}
-
-function atualizarContadorMassa() {
-  document.getElementById('contadorSelecionadosMassa').textContent = `${selecionadosMassa.size} cliente(s) selecionado(s)`;
-  document.getElementById('btnDispararMassa').disabled = selecionadosMassa.size === 0;
-}
-
-function atualizarPreviewMassa() {
-  const filtrados = getClientesFiltradosMassa();
-  const idsSelecionados = [...selecionadosMassa];
-  const [, clienteExemplo] = Object.entries(clientes).find(([id]) => id === idsSelecionados[0])
-    || filtrados[0]
-    || [null, null];
-
-  const mensagem = document.getElementById('mensagemMassa').value || 'Sua mensagem aparece aqui.';
-  const corpo = clienteExemplo ? substituirVariaveisCliente(mensagem, clienteExemplo) : mensagem;
-
-  document.getElementById('previewTituloMassa').textContent = 'Aviso do seu plano IPTV';
-  document.getElementById('previewCorpoMassa').textContent = corpo;
-
-  const icone = document.getElementById('iconeMassa').value.trim();
-  const imagem = document.getElementById('imagemMassa').value.trim();
-  const previewIcone = document.getElementById('previewIconeMassa');
-  const previewImagem = document.getElementById('previewImagemMassa');
-  const hint = document.getElementById('hintSemImagemMassa');
-
-  previewIcone.src = icone || 'https://via.placeholder.com/64/2dd4bf/04201d?text=IPTV';
-
-  if (imagem) {
-    previewImagem.src = imagem;
-    previewImagem.style.display = 'block';
-    hint.style.display = 'none';
-  } else {
-    previewImagem.style.display = 'none';
-    hint.style.display = 'block';
-  }
-}
-
-document.getElementById('filtroServidorMassa').addEventListener('change', () => { renderizarTabelaMassa(); atualizarPreviewMassa(); });
-document.getElementById('filtroStatusMassa').addEventListener('change', () => { renderizarTabelaMassa(); atualizarPreviewMassa(); });
-
-document.getElementById('btnSelecionarFiltradosMassa').addEventListener('click', () => {
-  const filtrados = getClientesFiltradosMassa();
-  if (filtrados.length === 0) {
-    mostrarToast('Nenhum cliente corresponde ao filtro atual.', true);
-    return;
-  }
-  filtrados.forEach(([id]) => selecionadosMassa.add(id));
-  renderizarTabelaMassa();
-  atualizarContadorMassa();
-  atualizarPreviewMassa();
-  mostrarToast(`${filtrados.length} cliente(s) selecionado(s) pelo filtro atual.`);
-});
-
-document.getElementById('btnLimparSelecaoMassa').addEventListener('click', () => {
-  selecionadosMassa.clear();
-  renderizarTabelaMassa();
-  atualizarContadorMassa();
-  atualizarPreviewMassa();
-});
-
-['mensagemMassa', 'iconeMassa', 'imagemMassa'].forEach(id => {
-  document.getElementById(id).addEventListener('input', atualizarPreviewMassa);
-});
-
-document.getElementById('btnDispararMassa').addEventListener('click', async () => {
-  const canal = document.getElementById('canalMassa').value;
-  const mensagem = document.getElementById('mensagemMassa').value.trim();
-  const assunto = document.getElementById('assuntoMassa').value.trim() || 'Aviso do seu plano IPTV';
-  const icone = document.getElementById('iconeMassa').value.trim() || null;
-  const imagem = document.getElementById('imagemMassa').value.trim() || null;
-
-  if (!mensagem) {
-    mostrarToast('Escreva uma mensagem antes de enviar.', true);
-    return;
-  }
-
-  const btn = document.getElementById('btnDispararMassa');
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
-
-  try {
-    const res = await fetch('/api/enviar-manual', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ids: [...selecionadosMassa],
-        canal,
-        mensagem,
-        assunto,
-        icone,
-        imagem
-      })
-    });
-    const resultado = await res.json();
-    if (!res.ok || !resultado.ok) throw new Error(resultado.erro || 'Falha no envio');
-
-    mostrarToast(`Enviado para ${resultado.enviados} cliente(s).`);
-  } catch (err) {
-    mostrarToast('Erro ao disparar notificação em massa.', true);
-    console.error(err);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Disparar Notificação';
   }
 });
 
