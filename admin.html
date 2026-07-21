@@ -83,6 +83,7 @@
         </select>
       </div>
       <div style="display:flex; gap:8px;">
+        <button class="btn-ghost icon-btn" id="btnSelecionarFiltrados">☑️ Selecionar Filtrados</button>
         <button class="btn-ghost icon-btn" id="btnNotificarSelecionados">📣 Notificar Selecionados</button>
         <button class="btn btn-amber" id="btnNovoCliente" style="width:auto; padding:11px 20px;">+ Novo Cliente</button>
       </div>
@@ -360,6 +361,34 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnCancelarRenovar">Cancelar</button>
       <button class="btn btn-primary" id="btnConfirmarRenovacao">Confirmar Renovação</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL WHATSAPP RÁPIDO -->
+<div class="modal-overlay hidden" id="modalWhatsappRapido">
+  <div class="modal">
+    <h2>Falar no WhatsApp</h2>
+    <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;">Cliente: <strong id="whatsappNomeCliente" style="color: var(--text);"></strong></p>
+
+    <div class="field">
+      <label>Mensagem rápida</label>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button type="button" class="btn-ghost icon-btn" onclick="enviarWhatsappRapido('vencendo')">🟡 Plano vencendo em breve</button>
+        <button type="button" class="btn-ghost icon-btn" onclick="enviarWhatsappRapido('hoje')">🟠 Plano vence hoje</button>
+        <button type="button" class="btn-ghost icon-btn" onclick="enviarWhatsappRapido('vencido')">🔴 Plano vencido</button>
+        <button type="button" class="btn-ghost icon-btn" onclick="enviarWhatsappRapido('renovacao')">✅ Confirmar renovação</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Ou escreva uma mensagem personalizada</label>
+      <input type="text" id="whatsappMensagemCustom" placeholder="Digite sua mensagem...">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnFecharWhatsappRapido">Fechar</button>
+      <button class="btn btn-primary" onclick="enviarWhatsappRapido('custom')">Enviar Personalizada</button>
     </div>
   </div>
 </div>
