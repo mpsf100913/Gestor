@@ -16,15 +16,18 @@ const db = admin.database();
 const TEMPLATES_PADRAO = {
   aviso_3_dias: {
     push: 'Olá {nome}! Seu plano vence em {dias_restantes} dias ({data_vencimento}). Toque para renovar.',
-    whatsapp: 'Olá! Meu plano IPTV vence em breve ({data_vencimento}), quero renovar.'
+    whatsapp: 'Olá! Meu plano IPTV vence em breve ({data_vencimento}), quero renovar.',
+    imagem: ''
   },
   aviso_hoje: {
     push: 'Olá {nome}! Seu plano vence HOJE. Renove agora para não perder o acesso.',
-    whatsapp: 'Olá! Meu plano IPTV vence hoje, quero renovar agora.'
+    whatsapp: 'Olá! Meu plano IPTV vence hoje, quero renovar agora.',
+    imagem: ''
   },
   aviso_vencido: {
     push: 'Olá {nome}, seu plano está vencido há {dias_restantes} dia(s). Renove para reativar.',
-    whatsapp: 'Olá! Meu plano IPTV está vencido, quero renovar e reativar o acesso.'
+    whatsapp: 'Olá! Meu plano IPTV está vencido, quero renovar e reativar o acesso.',
+    imagem: ''
   }
 };
 
@@ -74,8 +77,9 @@ module.exports = async (req, res) => {
       const linkWhatsapp = linkWhatsappSuporte(substituirVariaveis(template.whatsapp, cliente, dias));
       const corpoPush = substituirVariaveis(template.push, cliente, dias);
       const tituloPush = 'Seu plano IPTV';
+      const imagemPush = template.imagem || '';
 
-      await enviarPush(cliente.fcmToken, tituloPush, corpoPush, linkWhatsapp);
+      await enviarPush(cliente.fcmToken, tituloPush, corpoPush, linkWhatsapp, imagemPush);
       await enviarEmail(cliente.email, tituloPush, corpoPush);
 
       await db.ref(`clientes/${id}`).update({ ultimaNotificacao: hoje });
