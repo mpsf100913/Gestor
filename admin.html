@@ -470,5 +470,29 @@
 
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
+<script>
+  // Handler para notificações quando o app está aberto (primeiro plano)
+  if ('serviceWorker' in navigator && 'Notification' in window) {
+    const messaging = firebase.messaging();
+    messaging.onMessage((payload) => {
+      const clickAction = payload.data?.click_action || payload.notification?.click_action || '/';
+      const titulo = payload.notification?.title || 'Aviso';
+      const opcoes = {
+        body: payload.notification?.body || '',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        data: { click_action: clickAction }
+      };
+      if (payload.notification?.image) {
+        opcoes.image = payload.notification.image;
+      }
+      
+      // Mostra notificação mesmo em primeiro plano
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification(titulo, opcoes);
+      });
+    });
+  }
+</script>
 </body>
 </html>
