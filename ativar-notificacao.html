@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ativar Notificações — IPTV</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-card" style="max-width: 400px;">
+    <div class="login-signal">● SINAL ATIVO</div>
+    <h1 id="tituloPagina">Ativar Notificações</h1>
+    <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 24px; line-height: 1.5;" id="descricaoPagina">
+      Receba um aviso automático quando seu plano estiver perto de vencer — direto no seu celular.
+    </p>
+
+    <button class="btn btn-primary" id="btnAtivar">🔔 Ativar Notificações</button>
+    <div class="error-msg" id="statusMsg"></div>
+  </div>
+</div>
+
+<!-- SDKs do Firebase (versão compat, sem precisar de build) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<script>
+  // Pega o ID do cliente pela URL: ativar-notificacao.html?id=CLIENTE_ID
+  const params = new URLSearchParams(window.location.search);
+  const clienteId = params.get('id');
+
+  const btnAtivar = document.getElementById('btnAtivar');
+  const statusMsg = document.getElementById('statusMsg');
+  const titulo = document.getElementById('tituloPagina');
+  const descricao = document.getElementById('descricaoPagina');
+
+  if (!clienteId) {
+    titulo.textContent = 'Link inválido';
+    descricao.textContent = 'Esse link de ativação não é válido. Fale com o suporte para receber um novo link.';
+    btnAtivar.style.display = 'none';
+  } else {
+    firebase.initializeApp(firebaseConfig);
+  }
+
+  btnAtivar.addEventListener('click', async () => {
+    if (!clienteId) return;
+    btnAtivar.disabled = true;
+    btnAtivar.textContent = 'Ativando...';
+
+    try {
+      // Registra o service worker (necessário pro FCM funcionar)
+      const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+
+      const messaging = firebase.messaging();
+
+      // Pede permissão nativa do navegador
+      const permissao = await Notification.requestPermission();
+      if (permissao !== 'granted') {
+        throw new Error('Permissão negada');
+      }
+
+      // Gera o token único do dispositivo
+      // IMPORTANTE: troque VAPID_KEY_AQUI pela chave gerada no Firebase (Cloud Messaging > Web Push certificates)
+      const token = await messaging.getToken({
+        vapidKey: 'VAPID_KEY_AQUI',
+        serviceWorkerRegistration: registration
+      });
+
+      if (!token) throw new Error('Não foi possível gerar o token');
+
+      // Salva o token no Firebase, vinculado ao cliente
+      await fetch(`${DB_URL}/clientes/${clienteId}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fcmToken: token })
+      });
+
+      titulo.textContent = 'Notificações ativadas! ✅';
+      descricao.textContent = 'Você vai receber um aviso automático perto do vencimento do seu plano.';
+      btnAtivar.style.display = 'none';
+
+    } catch (err) {
+      console.error(err);
+      statusMsg.textContent = 'Não foi possível ativar. Verifique se você permitiu as notificações no navegador e tente novamente.';
+      btnAtivar.disabled = false;
+      btnAtivar.textContent = '🔔 Ativar Notificações';
+    }
+  });
+</script>
+
+</body>
+</html>

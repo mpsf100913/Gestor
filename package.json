@@ -1,0 +1,8 @@
+{
+  "name": "iptv-cobranca-backend",
+  "version": "1.0.0",
+  "dependencies": {
+    "firebase-admin": "^12.1.0",
+    "resend": "^3.2.0"
+  }
+}
