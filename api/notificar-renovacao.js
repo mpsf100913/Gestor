@@ -2,7 +2,7 @@
 // NOTIFICAÇÃO DE RENOVAÇÃO — dispara push + e-mail quando o admin renova um cliente
 // ============================================
 
-const { inicializarFirebase, substituirVariaveis, enviarPush, enviarEmail } = require('./lib/mensagens');
+const { inicializarFirebase, substituirVariaveis, enviarPush, enviarEmail, linkWhatsappSuporte } = require('./lib/mensagens');
 
 const admin = inicializarFirebase();
 const db = admin.database();
@@ -31,8 +31,9 @@ module.exports = async (req, res) => {
     const imagemTemplate = templates.imagemRenovacao || '';
     const mensagem = substituirVariaveis(textoTemplate, cliente);
     const titulo = 'Renovação confirmada';
+    const linkWhatsapp = linkWhatsappSuporte('Obrigado! Meu plano foi renovado com sucesso.');
 
-    await enviarPush(cliente.fcmToken, titulo, mensagem, undefined, imagemTemplate);
+    await enviarPush(cliente.fcmToken, titulo, mensagem, linkWhatsapp, imagemTemplate);
     await enviarEmail(cliente.email, titulo, mensagem);
 
     res.status(200).json({ ok: true });
