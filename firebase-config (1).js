@@ -5,7 +5,7 @@
 // ============================================
 
 const firebaseConfig = {
-  apiKey: "COLE_AQUI",
+  apiKey: "AIzaSyB5Y2BMqHIBDAhZoHFwDzdG-UuvPR1-FcQ",
   authDomain: "COLE_AQUI",
   databaseURL: "COLE_AQUI", // ex: https://iptv-cobranca-default-rtdb.firebaseio.com
   projectId: "COLE_AQUI",
@@ -18,4 +18,4 @@ const firebaseConfig = {
 const DB_URL = firebaseConfig.databaseURL;
 
 // PIN de acesso ao painel admin (troque por um número só seu)
-const ADMIN_PIN = "0000";
+const ADMIN_PIN = "891322";
