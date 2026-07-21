@@ -15,6 +15,8 @@ module.exports = async (req, res) => {
   try {
     const { ids, canal, mensagem, assunto, imagem } = req.body;
 
+    console.log('Envio manual recebido:', { ids: ids.length, canal, mensagem: mensagem.substring(0, 50), assunto, imagem });
+
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ ok: false, erro: 'Nenhum cliente selecionado' });
     }
@@ -32,6 +34,8 @@ module.exports = async (req, res) => {
       const corpo = substituirVariaveis(mensagem, cliente);
       const tituloAssunto = substituirVariaveis(assunto || 'Aviso do seu plano IPTV', cliente);
       const linkWhatsapp = linkWhatsappSuporte(corpo);
+
+      console.log(`Enviando para ${cliente.nome}:`, { imagem, linkWhatsapp: linkWhatsapp.substring(0, 50) });
 
       let algumEnvio = false;
 
