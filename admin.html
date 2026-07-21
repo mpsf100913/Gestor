@@ -198,6 +198,14 @@
       </div>
     </div>
 
+    <div class="msg-card">
+      <h3>Confirmação de Renovação</h3>
+      <div class="field">
+        <label>Mensagem (push e corpo do e-mail)</label>
+        <input type="text" id="msgRenovacao">
+      </div>
+    </div>
+
     <button class="btn btn-primary" id="btnSalvarMensagens" style="max-width: 240px;">Salvar Mensagens</button>
   </div>
 
@@ -322,6 +330,36 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnCancelarNotificar">Cancelar</button>
       <button class="btn btn-primary" id="btnEnviarNotificacaoManual">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RENOVAÇÃO DE CLIENTE -->
+<div class="modal-overlay hidden" id="modalRenovar">
+  <div class="modal">
+    <h2>Renovar Cliente</h2>
+    <input type="hidden" id="renovarClienteId">
+    <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 4px;">Cliente: <strong id="renovarNomeCliente" style="color: var(--text);"></strong></p>
+    <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;">Vencimento atual: <strong id="renovarVencimentoAtual" style="color: var(--text);"></strong></p>
+
+    <div class="field">
+      <label>Adicionar período</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="icon-btn" onclick="aplicarPeriodoRenovacao(30)">+30 dias</button>
+        <button type="button" class="icon-btn" onclick="aplicarPeriodoRenovacao(90)">+90 dias</button>
+        <button type="button" class="icon-btn" onclick="aplicarPeriodoRenovacao(180)">+180 dias</button>
+        <button type="button" class="icon-btn" onclick="aplicarPeriodoRenovacao(365)">+365 dias</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Ou escolha a nova data manualmente</label>
+      <input type="date" id="renovarNovaData">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancelarRenovar">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarRenovacao">Confirmar Renovação</button>
     </div>
   </div>
 </div>
