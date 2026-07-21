@@ -28,10 +28,11 @@ module.exports = async (req, res) => {
 
     const templates = snapshotTemplates.val() || {};
     const textoTemplate = templates.renovacao || TEMPLATE_PADRAO;
+    const imagemTemplate = templates.imagemRenovacao || '';
     const mensagem = substituirVariaveis(textoTemplate, cliente);
     const titulo = 'Renovação confirmada';
 
-    await enviarPush(cliente.fcmToken, titulo, mensagem);
+    await enviarPush(cliente.fcmToken, titulo, mensagem, undefined, imagemTemplate);
     await enviarEmail(cliente.email, titulo, mensagem);
 
     res.status(200).json({ ok: true });
