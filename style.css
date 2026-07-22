@@ -2,17 +2,28 @@
    TOKENS
    ============================================ */
 :root {
-  --bg: #0b0f14;
-  --bg-elevated: #121821;
-  --bg-card: #161d27;
-  --border: #232c38;
-  --text: #e7edf3;
+  --bg: #0a0e13;
+  --bg-elevated: #0f1419;
+  --bg-card: #141920;
+  --border: #1f2937;
+  --text: #f0f4f8;
   --text-dim: #8fa1b3;
-  --accent: #35d0c0;       /* sinal ativo - cyan/teal */
-  --accent-dim: #1c7d73;
-  --warn: #f5b942;         /* vencendo */
-  --danger: #ef5b5b;       /* vencido */
-  --amber: #ff9f43;        /* CTA principal */
+  
+  /* Paleta vibrante nova */
+  --cyan: #00d9ff;           /* Primária - Cyan vibrante */
+  --roxo: #7c3aed;           /* Secundária - Roxo/Indigo */
+  --laranja: #ff6b35;        /* Destaque - Laranja/Coral */
+  --verde: #00d084;          /* Sucesso - Verde vibrante */
+  --amarelo: #ffa500;        /* Aviso - Amarelo/Ouro */
+  
+  /* Compatibilidade com código existente */
+  --accent: #00d9ff;         /* Cyan principal */
+  --accent-dim: #0099cc;
+  --warn: #ffa500;           /* Amarelo para vencendo */
+  --danger: #ff6b35;         /* Laranja para vencido */
+  --amber: #ff6b35;          /* CTA principal */
+  --success: #00d084;        /* Verde para sucesso */
+  
   --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
   --font-body: 'Inter', 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
@@ -179,6 +190,9 @@ body {
 .summary-card.ok .value { color: var(--accent); }
 .summary-card.warn .value { color: var(--warn); }
 .summary-card.danger .value { color: var(--danger); }
+.summary-card.amarelo-card { border-left: 4px solid var(--amarelo); cursor: pointer; transition: all 0.3s; }
+.summary-card.amarelo-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(255, 165, 0, 0.2); }
+.summary-card.amarelo-card .value { color: var(--amarelo); }
 
 /* ============================================
    TOOLBAR / FILTROS
