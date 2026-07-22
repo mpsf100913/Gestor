@@ -113,11 +113,39 @@ function linkWhatsappSuporte(mensagem) {
   return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensagem)}`;
 }
 
+function gerarLinkRedirecionamento(config, mensagem, cliente) {
+  const tipo = config?.redirecionamento || 'whatsapp';
+
+  if (tipo === 'email') {
+    const email = config?.emailCustomizado || '';
+    if (email) {
+      return `mailto:${email}?subject=${encodeURIComponent('Renovação de Plano IPTV')}&body=${encodeURIComponent(mensagem)}`;
+    }
+    return linkWhatsappSuporte(mensagem);
+  }
+
+  if (tipo === 'url') {
+    const url = config?.urlCustomizada || '';
+    if (url) {
+      // Tenta substituir variáveis na URL se houver
+      return url
+        .replace('{nome}', cliente?.nome || '')
+        .replace('{cliente_id}', cliente?.id || '')
+        .replace('{email}', cliente?.email || '');
+    }
+    return linkWhatsappSuporte(mensagem);
+  }
+
+  // Padrão: WhatsApp
+  return linkWhatsappSuporte(mensagem);
+}
+
 module.exports = {
   inicializarFirebase,
   formatarData,
   substituirVariaveis,
   enviarPush,
   enviarEmail,
-  linkWhatsappSuporte
+  linkWhatsappSuporte,
+  gerarLinkRedirecionamento
 };
