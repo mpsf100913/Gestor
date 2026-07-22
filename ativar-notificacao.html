@@ -46,10 +46,28 @@
 <!-- SDKs do Firebase (versão compat, sem precisar de build) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
-<script src="firebase-config.js"></script>
 
 <script>
-  // Pega o ID do cliente pela URL: ativar-notificacao.html?id=CLIENTE_ID
+  // ============================================
+  // CONFIGURAÇÃO DO FIREBASE (EMBUTIDA)
+  // ============================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyB5Y2BMqHIBDAhZoHFwDzdG-UuvPR1-FcQ",
+    authDomain: "gestor-22b13.firebaseapp.com",
+    databaseURL: "https://gestor-22b13-default-rtdb.firebaseio.com",
+    projectId: "gestor-22b13",
+    storageBucket: "gestor-22b13.firebasestorage.app",
+    messagingSenderId: "124521158946",
+    appId: "1:124521158946:web:06ea51762e01c571512d7b"
+  };
+
+  const VAPID_KEY = "BH4XFOg4RddXU-xPuEh3Loli2QiGk1XuXhX4K9jmDajsdMf3DkfgLJUcZ6Rhy62-KjZ7FKpbGyiS5YnTwUA5D9w";
+  const DB_URL = firebaseConfig.databaseURL;
+  const ADMIN_PIN = "891322";
+
+  // ============================================
+  // LÓGICA DE ATIVAÇÃO
+  // ============================================
   const params = new URLSearchParams(window.location.search);
   const clienteId = params.get('id');
 
@@ -88,9 +106,8 @@
       }
 
       // Gera o token único do dispositivo
-      // IMPORTANTE: troque VAPID_KEY_AQUI pela chave gerada no Firebase (Cloud Messaging > Web Push certificates)
       const token = await messaging.getToken({
-        vapidKey: 'VAPID_KEY_AQUI',
+        vapidKey: VAPID_KEY,
         serviceWorkerRegistration: registration
       });
 
