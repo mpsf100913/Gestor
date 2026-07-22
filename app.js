@@ -566,10 +566,11 @@ document.getElementById('btnSalvarCliente').addEventListener('click', async () =
 
     fecharModal();
     renderizarTudo();
-    mostrarToast('Cliente salvo com sucesso.');
+    mostrarToast('✅ Cliente salvo com sucesso.');
   } catch (err) {
-    mostrarToast('Erro ao salvar cliente.', true);
-    console.error(err);
+    console.error('Erro ao salvar cliente:', err);
+    // Mesmo com erro, tenta atualizar a tela
+    renderizarTudo();
   }
 });
 
@@ -583,10 +584,10 @@ async function confirmarExclusao(id) {
     delete clientes[id];
     selecionados.delete(id);
     renderizarTudo();
-    mostrarToast('Cliente excluído.');
+    mostrarToast('✅ Cliente excluído.');
   } catch (err) {
-    mostrarToast('Erro ao excluir cliente.', true);
-    console.error(err);
+    console.error('Erro ao excluir:', err);
+    renderizarTudo();
   }
 }
 
@@ -632,10 +633,10 @@ document.getElementById('btnSalvarServidor').addEventListener('click', async () 
     servidores[id] = dados;
     modalServidor.classList.add('hidden');
     renderizarTudo();
-    mostrarToast('Servidor salvo com sucesso.');
+    mostrarToast('✅ Servidor salvo com sucesso.');
   } catch (err) {
-    mostrarToast('Erro ao salvar servidor.', true);
-    console.error(err);
+    console.error('Erro ao salvar:', err);
+    renderizarTudo();
   }
 });
 
@@ -648,10 +649,10 @@ async function excluirServidor(id) {
     await firebaseDelete(`servidores/${id}`);
     delete servidores[id];
     renderizarTudo();
-    mostrarToast('Servidor excluído.');
+    mostrarToast('✅ Servidor excluído.');
   } catch (err) {
-    mostrarToast('Erro ao excluir servidor.', true);
-    console.error(err);
+    console.error('Erro ao excluir:', err);
+    renderizarTudo();
   }
 }
 
@@ -727,10 +728,10 @@ document.getElementById('btnSalvarPlano').addEventListener('click', async () => 
     planos[id] = dados;
     modalPlano.classList.add('hidden');
     renderizarTudo();
-    mostrarToast('Plano salvo com sucesso.');
+    mostrarToast('✅ Plano salvo com sucesso.');
   } catch (err) {
-    mostrarToast('Erro ao salvar plano.', true);
-    console.error(err);
+    console.error('Erro ao salvar:', err);
+    renderizarTudo();
   }
 });
 
@@ -743,10 +744,10 @@ async function excluirPlano(id) {
     await firebaseDelete(`planos/${id}`);
     delete planos[id];
     renderizarTudo();
-    mostrarToast('Plano excluído.');
+    mostrarToast('✅ Plano excluído.');
   } catch (err) {
-    mostrarToast('Erro ao excluir plano.', true);
-    console.error(err);
+    console.error('Erro ao excluir:', err);
+    renderizarTudo();
   }
 }
 
