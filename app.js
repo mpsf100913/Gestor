@@ -17,6 +17,7 @@ let clientes = {};
 let servidores = {};
 let planos = {};
 let templates = {};
+let renovacoes = {};
 let selecionados = new Set();
 
 const TEMPLATES_PADRAO = {
@@ -117,16 +118,18 @@ function gerarId(prefixo) {
 // ============================================
 async function carregarTudo() {
   try {
-    const [dadosClientes, dadosServidores, dadosPlanos, dadosTemplates] = await Promise.all([
+    const [dadosClientes, dadosServidores, dadosPlanos, dadosTemplates, dadosRenovacoes] = await Promise.all([
       firebaseGet('clientes'),
       firebaseGet('servidores'),
       firebaseGet('planos'),
-      firebaseGet('config/templates')
+      firebaseGet('config/templates'),
+      firebaseGet('renovacoes')
     ]);
     clientes = dadosClientes || {};
     servidores = dadosServidores || {};
     planos = dadosPlanos || {};
     templates = dadosTemplates || {};
+    renovacoes = dadosRenovacoes || {};
     renderizarTudo();
     preencherFormMensagens();
   } catch (err) {
@@ -146,6 +149,7 @@ function renderizarTudo() {
   renderizarTabela();
   renderizarResumo();
   renderizarResumoPorServidor();
+  renderizarFinanceiro();
 }
 
 // ============================================
@@ -196,7 +200,7 @@ function renderizarTabela() {
   const lista = Object.entries(clientes).filter(([id, c]) => {
     if (!c.nome) return false;
     const status = statusCliente(c.vencimento);
-    if (busca && !c.nome.toLowerCase().includes(busca)) return false;
+    if (busca && !c.nome.toLowerCase().includes(busca) && !c.usuarioIptv?.toLowerCase().includes(busca)) return false;
     if (filtroServidor && c.servidor !== filtroServidor) return false;
     if (filtroStatus && status !== filtroStatus) return false;
     return true;
@@ -217,6 +221,7 @@ function renderizarTabela() {
     tr.innerHTML = `
       <td><input type="checkbox" class="check-cliente" data-id="${id}" ${selecionados.has(id) ? 'checked' : ''}></td>
       <td>${c.nome}</td>
+      <td>${c.usuarioIptv || '-'}</td>
       <td>${c.servidor || '-'}</td>
       <td>${formatarValor(c.valorPlano)}</td>
       <td>${formatarData(c.vencimento)}</td>
@@ -274,18 +279,21 @@ function atualizarContadorSelecionados() {
 
 function renderizarResumo() {
   const todos = Object.values(clientes).filter(c => c.nome);
-  let ativos = 0, vencendo = 0, vencidos = 0, comNotif = 0;
+  let ativos = 0, vencendo = 0, vencidos = 0, vencendoHoje = 0, comNotif = 0;
+  const hoje = new Date().toISOString().split('T')[0];
 
   todos.forEach(c => {
     const status = statusCliente(c.vencimento);
     if (status === 'ativo') ativos++;
     if (status === 'vencendo') vencendo++;
     if (status === 'vencido') vencidos++;
+    if (c.vencimento === hoje) vencendoHoje++;
     if (c.fcmToken) comNotif++;
   });
 
   document.getElementById('countAtivos').textContent = ativos;
   document.getElementById('countVencendo').textContent = vencendo;
+  document.getElementById('countVencendoHoje').textContent = vencendoHoje;
   document.getElementById('countVencidos').textContent = vencidos;
   document.getElementById('countNotif').textContent = `${comNotif}/${todos.length}`;
 }
@@ -342,6 +350,115 @@ function renderizarResumoPorServidor() {
 }
 
 // ============================================
+// FINANCEIRO — Cálculos e Renderização
+// ============================================
+function renderizarFinanceiro() {
+  const agora = new Date();
+  const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
+  
+  let receitaMesAtual = 0;
+  let receitaAtiva = 0;
+  let receitaVencendo = 0;
+  let receitaAtraso = 0;
+
+  Object.values(clientes).forEach(c => {
+    if (!c.nome || !c.valorPlano) return;
+    const valor = parseFloat(c.valorPlano) || 0;
+    const status = statusCliente(c.vencimento);
+
+    // Calcula receita por status
+    if (status === 'ativo') receitaAtiva += valor;
+    if (status === 'vencendo') receitaVencendo += valor;
+    if (status === 'vencido') receitaAtraso += valor;
+  });
+
+  // Se houver histórico de renovações, soma do mês
+  if (renovacoes) {
+    Object.values(renovacoes).forEach(ren => {
+      if (ren.data && ren.data.startsWith(mesAtual)) {
+        receitaMesAtual += parseFloat(ren.valor) || 0;
+      }
+    });
+  }
+
+  document.getElementById('receitaMesAtual').textContent = formatarValor(receitaMesAtual);
+  document.getElementById('receitaAtiva').textContent = formatarValor(receitaAtiva);
+  document.getElementById('receitaVencendo').textContent = formatarValor(receitaVencendo);
+  document.getElementById('receitaAtraso').textContent = formatarValor(receitaAtraso);
+
+  renderizarResumoFinanceiroPorServidor();
+  renderizarHistoricoRenovacoes();
+}
+
+function renderizarResumoFinanceiroPorServidor() {
+  const tbody = document.getElementById('tabelaResumoFinanceiroServidor');
+  tbody.innerHTML = '';
+
+  const nomesServidores = Object.values(servidores).map(s => s.nome).filter(Boolean);
+  const clientesPorServidor = {};
+
+  Object.values(clientes).forEach(c => {
+    if (!c.nome) return;
+    const nomeServ = c.servidor || 'Sem servidor';
+    if (!clientesPorServidor[nomeServ]) clientesPorServidor[nomeServ] = [];
+    clientesPorServidor[nomeServ].push(c);
+  });
+
+  nomesServidores.forEach(n => { if (!clientesPorServidor[n]) clientesPorServidor[n] = []; });
+
+  Object.keys(clientesPorServidor).sort().forEach(nomeServ => {
+    const lista = clientesPorServidor[nomeServ];
+    let ativosCount = 0, atrasosCount = 0, receitaAtiva = 0, receitaAtraso = 0;
+
+    lista.forEach(c => {
+      const status = statusCliente(c.vencimento);
+      const valor = parseFloat(c.valorPlano) || 0;
+      if (status === 'ativo' || status === 'vencendo') { ativosCount++; receitaAtiva += valor; }
+      if (status === 'vencido') { atrasosCount++; receitaAtraso += valor; }
+    });
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${nomeServ}</td>
+      <td>${ativosCount}</td>
+      <td>${formatarValor(receitaAtiva)}</td>
+      <td>${atrasosCount}</td>
+      <td>${formatarValor(receitaAtraso)}</td>
+      <td>${formatarValor(receitaAtiva + receitaAtraso)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderizarHistoricoRenovacoes() {
+  const tbody = document.getElementById('tabelaHistoricoRenovacoes');
+  const empty = document.getElementById('emptyHistorico');
+  tbody.innerHTML = '';
+
+  if (!renovacoes || Object.keys(renovacoes).length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const lista = Object.entries(renovacoes)
+    .sort((a, b) => new Date(b[1].data) - new Date(a[1].data))
+    .slice(0, 100); // Últimas 100 renovações
+
+  lista.forEach(([id, ren]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatarData(ren.data)}</td>
+      <td>${ren.clienteNome || '-'}</td>
+      <td>${formatarValor(ren.valor)}</td>
+      <td>${formatarData(ren.novoVencimento)}</td>
+      <td>${ren.servidor || '-'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ============================================
 // MODAL — NOVO / EDITAR CLIENTE
 // ============================================
 const modal = document.getElementById('modalCliente');
@@ -352,7 +469,7 @@ document.getElementById('btnCancelarModal').addEventListener('click', fecharModa
 function abrirModal() {
   document.getElementById('modalTitulo').textContent = 'Novo Cliente';
   document.getElementById('clienteId').value = '';
-  ['fNome', 'fWhatsapp', 'fEmail', 'fServidor', 'fPlano', 'fValor', 'fVencimento', 'fUsuario', 'fSenha'].forEach(id => {
+  ['fNome', 'fWhatsapp', 'fEmail', 'fServidor', 'fPlano', 'fValor', 'fVencimento', 'fUsuario', 'fSenha', 'fObservacao'].forEach(id => {
     document.getElementById(id).value = '';
   });
   modal.classList.remove('hidden');
@@ -372,6 +489,7 @@ function abrirEdicao(id) {
   document.getElementById('fVencimento').value = c.vencimento || '';
   document.getElementById('fUsuario').value = c.usuarioIptv || '';
   document.getElementById('fSenha').value = c.senhaIptv || '';
+  document.getElementById('fObservacao').value = c.observacao || '';
   modal.classList.remove('hidden');
 }
 
@@ -389,6 +507,7 @@ document.getElementById('btnSalvarCliente').addEventListener('click', async () =
   const vencimento = document.getElementById('fVencimento').value;
   const usuarioIptv = document.getElementById('fUsuario').value.trim();
   const senhaIptv = document.getElementById('fSenha').value.trim();
+  const observacao = document.getElementById('fObservacao').value.trim();
   let id = document.getElementById('clienteId').value;
 
   if (!nome || !whatsapp || !vencimento) {
@@ -396,7 +515,7 @@ document.getElementById('btnSalvarCliente').addEventListener('click', async () =
     return;
   }
 
-  const dadosCliente = { nome, whatsapp, email, servidor, plano, valorPlano, vencimento, usuarioIptv, senhaIptv };
+  const dadosCliente = { nome, whatsapp, email, servidor, plano, valorPlano, vencimento, usuarioIptv, senhaIptv, observacao };
 
   if (id && clientes[id] && clientes[id].fcmToken) {
     dadosCliente.fcmToken = clientes[id].fcmToken;
@@ -631,6 +750,20 @@ document.getElementById('toggleResumoServidor').addEventListener('click', () => 
   seta.classList.toggle('open');
 });
 
+document.getElementById('toggleResumoServidorFinanceiro').addEventListener('click', () => {
+  const conteudo = document.getElementById('conteudoResumoServidorFinanceiro');
+  const seta = document.getElementById('setaResumoServidorFinanceiro');
+  conteudo.classList.toggle('hidden');
+  seta.classList.toggle('open');
+});
+
+document.getElementById('toggleHistoricoRenovacoes').addEventListener('click', () => {
+  const conteudo = document.getElementById('conteudoHistoricoRenovacoes');
+  const seta = document.getElementById('setaHistoricoRenovacoes');
+  conteudo.classList.toggle('hidden');
+  seta.classList.toggle('open');
+});
+
 // ============================================
 // MENSAGENS — TEMPLATES
 // ============================================
@@ -650,6 +783,16 @@ function preencherFormMensagens() {
   document.getElementById('msgVencidoImagem').value = tv.imagem || '';
   document.getElementById('msgRenovacao').value = templates.renovacao || TEMPLATE_RENOVACAO_PADRAO;
   document.getElementById('msgRenovacaoImagem').value = templates.imagemRenovacao || '';
+
+  // Carrega configuração de redirecionamento
+  const tipoRedir = templates.redirecionamento || 'whatsapp';
+  document.querySelector(`input[name="redirecionamento"][value="${tipoRedir}"]`).checked = true;
+  document.getElementById('emailCustomizadoRedirecionar').value = templates.emailCustomizado || '';
+  document.getElementById('urlCustomizadaRedirecionar').value = templates.urlCustomizada || '';
+
+  // Atualiza visibilidade dos campos
+  document.getElementById('emailCustomizadoRedirecionar').style.display = tipoRedir === 'email' ? 'block' : 'none';
+  document.getElementById('urlCustomizadaRedirecionar').style.display = tipoRedir === 'url' ? 'block' : 'none';
 }
 
 document.getElementById('btnSalvarMensagens').addEventListener('click', async () => {
@@ -670,17 +813,30 @@ document.getElementById('btnSalvarMensagens').addEventListener('click', async ()
       imagem: document.getElementById('msgVencidoImagem').value.trim()
     },
     renovacao: document.getElementById('msgRenovacao').value.trim(),
-    imagemRenovacao: document.getElementById('msgRenovacaoImagem').value.trim()
+    imagemRenovacao: document.getElementById('msgRenovacaoImagem').value.trim(),
+    // Configuração de redirecionamento
+    redirecionamento: document.querySelector('input[name="redirecionamento"]:checked').value,
+    emailCustomizado: document.getElementById('emailCustomizadoRedirecionar').value.trim(),
+    urlCustomizada: document.getElementById('urlCustomizadaRedirecionar').value.trim()
   };
 
   try {
     await firebasePatch('config/templates', novosTemplates);
     templates = novosTemplates;
-    mostrarToast('Mensagens salvas com sucesso.');
+    mostrarToast('Mensagens e configurações salvas com sucesso.');
   } catch (err) {
     mostrarToast('Erro ao salvar mensagens.', true);
     console.error(err);
   }
+});
+
+// Listeners para mostrar/esconder campos de redirecionamento
+document.querySelectorAll('input[name="redirecionamento"]').forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    const tipo = e.target.value;
+    document.getElementById('emailCustomizadoRedirecionar').style.display = tipo === 'email' ? 'block' : 'none';
+    document.getElementById('urlCustomizadaRedirecionar').style.display = tipo === 'url' ? 'block' : 'none';
+  });
 });
 
 function substituirVariaveisCliente(template, c) {
@@ -771,6 +927,54 @@ function enviarWhatsappRapido(tipo) {
 }
 
 // ============================================
+// VENCENDO HOJE
+// ============================================
+const modalVencendoHoje = document.getElementById('modalVencendoHoje');
+
+function abrirModalVencendoHoje() {
+  const hoje = new Date().toISOString().split('T')[0];
+  const vencendoHoje = Object.entries(clientes)
+    .filter(([id, c]) => c.nome && c.vencimento === hoje)
+    .sort((a, b) => a[1].nome.localeCompare(b[1].nome));
+
+  const tbody = document.getElementById('tabelaVencendoHoje');
+  const empty = document.getElementById('emptyVencendoHoje');
+  const contador = document.getElementById('contadorVencendoHoje');
+  
+  tbody.innerHTML = '';
+
+  if (vencendoHoje.length === 0) {
+    empty.style.display = 'block';
+    contador.textContent = 'Nenhum cliente vencendo hoje.';
+  } else {
+    empty.style.display = 'none';
+    contador.textContent = `${vencendoHoje.length} cliente(s) vencendo hoje`;
+
+    vencendoHoje.forEach(([id, c]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.nome}</td>
+        <td>${c.servidor || '-'}</td>
+        <td>${formatarValor(c.valorPlano)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="abrirRenovacao('${id}')">Renovar</button>
+            <button class="icon-btn" onclick="abrirWhatsappRapido('${id}')">WhatsApp</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  modalVencendoHoje.classList.remove('hidden');
+}
+
+document.getElementById('btnFecharVencendoHoje').addEventListener('click', () => {
+  modalVencendoHoje.classList.add('hidden');
+});
+
+// ============================================
 // RENOVAÇÃO DE CLIENTE
 // ============================================
 const modalRenovar = document.getElementById('modalRenovar');
@@ -819,6 +1023,19 @@ document.getElementById('btnConfirmarRenovacao').addEventListener('click', async
   btn.textContent = 'Renovando...';
 
   try {
+    // Registra a renovação no histórico financeiro
+    const hoje = new Date().toISOString().split('T')[0];
+    const idRenovacao = gerarId('ren');
+    const registroRenovacao = {
+      clienteId: id,
+      clienteNome: c.nome,
+      servidor: c.servidor,
+      valor: c.valorPlano,
+      data: hoje,
+      novoVencimento: novaData
+    };
+    await firebasePatch(`renovacoes/${idRenovacao}`, registroRenovacao);
+
     // atualiza a data e limpa a última notificação (pra voltar a poder avisar no próximo ciclo)
     await firebasePatch(`clientes/${id}`, { vencimento: novaData, ultimaNotificacao: null });
     clientes[id] = { ...c, vencimento: novaData, ultimaNotificacao: null };
