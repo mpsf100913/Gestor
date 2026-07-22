@@ -1212,7 +1212,11 @@ document.getElementById('btnEnviarNotificacaoManual').addEventListener('click', 
     const resultado = await res.json();
     if (!res.ok || !resultado.ok) throw new Error(resultado.erro || 'Falha no envio');
 
-    mostrarToast(`Enviado para ${resultado.enviados} cliente(s).`);
+    if (resultado.enviados === 0) {
+      mostrarToast('Nenhum cliente notificado. Verifique se os clientes ativaram notificações.', true);
+    } else {
+      mostrarToast(`✅ Enviado para ${resultado.enviados} cliente(s).`);
+    }
     modalNotificar.classList.add('hidden');
   } catch (err) {
     mostrarToast('Erro ao enviar notificação manual.', true);
