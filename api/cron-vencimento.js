@@ -7,7 +7,8 @@ const {
   substituirVariaveis,
   enviarPush,
   enviarEmail,
-  linkWhatsappSuporte
+  linkWhatsappSuporte,
+  gerarLinkRedirecionamento
 } = require('./lib/mensagens');
 
 const admin = inicializarFirebase();
@@ -74,13 +75,17 @@ module.exports = async (req, res) => {
       if (cliente.ultimaNotificacao === hoje) continue;
 
       const template = templatesSalvos[tipo] || TEMPLATES_PADRAO[tipo];
-      const linkWhatsapp = linkWhatsappSuporte(substituirVariaveis(template.whatsapp, cliente, dias));
       const corpoPush = substituirVariaveis(template.push, cliente, dias);
       const tituloPush = 'Seu plano IPTV';
       const imagemPush = template.imagem || '';
+      const linkClick = gerarLinkRedirecionamento(templatesSalvos, corpoPush, cliente);
 
-      await enviarPush(cliente.fcmToken, tituloPush, corpoPush, linkWhatsapp, imagemPush);
+      await enviarPush(cliente.fcmToken, tituloPush, corpoPush, linkClick, imagemPush);
       await enviarEmail(cliente.email, tituloPush, corpoPush);
+      // Se cliente registrou um email customizado para notificações, envia também lá
+      if (cliente.emailNotificacao && cliente.emailNotificacao !== cliente.email) {
+        await enviarEmail(cliente.emailNotificacao, tituloPush, corpoPush);
+      }
 
       await db.ref(`clientes/${id}`).update({ ultimaNotificacao: hoje });
       notificados++;
