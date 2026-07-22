@@ -1,8 +1,6 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron-vencimento",
-      "schedule": "0 12 * * *"
-    }
-  ]
+  "crons": [{
+    "path": "/api/cron-vencimento",
+    "schedule": "0 */12 * * *"
+  }]
 }
