@@ -34,7 +34,7 @@
         <div class="label">Ativos</div>
         <div class="value" id="countAtivos">0</div>
       </div>
-      <div class="summary-card warn">
+      <div class="summary-card warn" onclick="abrirModalVencendo3Dias()">
         <div class="label">Vencendo (3 dias)</div>
         <div class="value" id="countVencendo">0</div>
       </div>
@@ -540,6 +540,36 @@
 
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnFecharVencendoHoje">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VENCENDO EM 3 DIAS -->
+<div class="modal-overlay hidden" id="modalVencendo3Dias">
+  <div class="modal" style="max-width: 600px; max-height: 70vh; overflow-y: auto;">
+    <h2>Clientes Vencendo (próximos 3 dias)</h2>
+    <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;" id="contadorVencendo3Dias">Carregando...</p>
+    
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Vencimento</th>
+            <th>Servidor</th>
+            <th>Valor</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaVencendo3Dias"></tbody>
+      </table>
+      <div class="empty-state" id="emptyVencendo3Dias" style="display:none;">
+        Nenhum cliente vencendo nos próximos 3 dias.
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnFecharVencendo3Dias">Fechar</button>
     </div>
   </div>
 </div>
