@@ -541,11 +541,29 @@ document.getElementById('btnSalvarCliente').addEventListener('click', async () =
     dadosCliente.fcmToken = clientes[id].fcmToken;
   }
 
+  const ehNovoCliente = !id;  // Verifica se é um novo cliente
   if (!id) id = gerarId('cli');
 
   try {
     await firebasePatch(`clientes/${id}`, dadosCliente);
     clientes[id] = { ...(clientes[id] || {}), ...dadosCliente };
+
+    // Se é novo cliente, registra no financeiro como "Cadastro Inicial"
+    if (ehNovoCliente && valorPlano) {
+      const hoje = new Date().toISOString().split('T')[0];
+      const idRegistro = gerarId('ren');
+      const registroFinanceiro = {
+        clienteId: id,
+        clienteNome: nome,
+        servidor: servidor,
+        valor: valorPlano,
+        data: hoje,
+        novoVencimento: vencimento,
+        tipo: 'cadastro'  // Marca como cadastro inicial
+      };
+      await firebasePatch(`renovacoes/${idRegistro}`, registroFinanceiro);
+    }
+
     fecharModal();
     renderizarTudo();
     mostrarToast('Cliente salvo com sucesso.');
@@ -763,13 +781,6 @@ function renderizarTabelaPlanos() {
 // ============================================
 // RESUMO POR SERVIDOR — RECOLHÍVEL
 // ============================================
-document.getElementById('toggleResumoServidor').addEventListener('click', () => {
-  const conteudo = document.getElementById('conteudoResumoServidor');
-  const seta = document.getElementById('setaResumoServidor');
-  conteudo.classList.toggle('hidden');
-  seta.classList.toggle('open');
-});
-
 document.getElementById('toggleResumoServidorFinanceiro').addEventListener('click', () => {
   const conteudo = document.getElementById('conteudoResumoServidorFinanceiro');
   const seta = document.getElementById('setaResumoServidorFinanceiro');
