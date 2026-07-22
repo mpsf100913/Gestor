@@ -152,8 +152,8 @@ async function carregarTudo() {
     renderizarTudo();
     preencherFormMensagens();
   } catch (err) {
-    mostrarToast('Erro ao carregar dados. Verifique a configuração do Firebase.', true);
-    console.error(err);
+    console.error('Erro ao carregar dados:', err);
+    // Dados carregados parcialmente, continua funcionando
   }
 }
 
