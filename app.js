@@ -998,6 +998,66 @@ document.getElementById('btnFecharVencendoHoje').addEventListener('click', () =>
 });
 
 // ============================================
+// VENCENDO EM 3 DIAS
+// ============================================
+const modalVencendo3Dias = document.getElementById('modalVencendo3Dias');
+
+function abrirModalVencendo3Dias() {
+  const vencendo3dias = Object.entries(clientes)
+    .filter(([id, c]) => {
+      if (!c.nome) return false;
+      const status = statusCliente(c.vencimento);
+      return status === 'vencendo';  // Status 'vencendo' = 1-3 dias
+    })
+    .sort((a, b) => {
+      // Ordena por dias restantes (mais próximos primeiro)
+      const diasA = calcularDiasRestantes(a[1].vencimento);
+      const diasB = calcularDiasRestantes(b[1].vencimento);
+      return diasA - diasB;
+    });
+
+  const tbody = document.getElementById('tabelaVencendo3Dias');
+  const empty = document.getElementById('emptyVencendo3Dias');
+  const contador = document.getElementById('contadorVencendo3Dias');
+  
+  tbody.innerHTML = '';
+
+  if (vencendo3dias.length === 0) {
+    empty.style.display = 'block';
+    contador.textContent = 'Nenhum cliente vencendo nos próximos 3 dias.';
+  } else {
+    empty.style.display = 'none';
+    contador.textContent = `${vencendo3dias.length} cliente(s) vencendo nos próximos 3 dias`;
+
+    vencendo3dias.forEach(([id, c]) => {
+      const dias = calcularDiasRestantes(c.vencimento);
+      const diasTexto = dias === 1 ? 'em 1 dia' : `em ${dias} dias`;
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.nome}</td>
+        <td>${formatarData(c.vencimento)} (${diasTexto})</td>
+        <td>${c.servidor || '-'}</td>
+        <td>${formatarValor(c.valorPlano)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="abrirRenovacao('${id}')">Renovar</button>
+            <button class="icon-btn" onclick="abrirWhatsappRapido('${id}')">WhatsApp</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  modalVencendo3Dias.classList.remove('hidden');
+}
+
+document.getElementById('btnFecharVencendo3Dias').addEventListener('click', () => {
+  modalVencendo3Dias.classList.add('hidden');
+});
+
+// ============================================
 // RENOVAÇÃO DE CLIENTE
 // ============================================
 const modalRenovar = document.getElementById('modalRenovar');
