@@ -611,6 +611,11 @@
 
 <div id="toast"></div>
 
+<!-- SDKs do Firebase (DEVE SER ANTES DE TUDO) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+
 <script>
   // ============================================
   // CONFIGURAÇÃO DO FIREBASE (EMBUTIDA)
@@ -628,6 +633,9 @@
   const VAPID_KEY = "BH4XFOg4RddXU-xPuEh3Loli2QiGk1XuXhX4K9jmDajsdMf3DkfgLJUcZ6Rhy62-KjZ7FKpbGyiS5YnTwUA5D9w";
   const DB_URL = firebaseConfig.databaseURL;
   const ADMIN_PIN = "891322";
+
+  // Inicializa Firebase AQUI, antes de carregar app.js
+  firebase.initializeApp(firebaseConfig);
 </script>
 
 <script src="app.js"></script>
