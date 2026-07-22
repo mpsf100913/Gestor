@@ -1,8 +1,19 @@
 {
-  "name": "iptv-cobranca-backend",
+  "name": "gestor-iptv",
   "version": "1.0.0",
+  "description": "Sistema de Cobrança IPTV com Notificações",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node -r dotenv/config index.js"
+  },
   "dependencies": {
-    "firebase-admin": "^12.1.0",
-    "resend": "^3.2.0"
+    "firebase-admin": "^12.0.0",
+    "resend": "^3.0.0",
+    "axios": "^1.6.0",
+    "jsonwebtoken": "^9.1.0",
+    "dotenv": "^16.0.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
