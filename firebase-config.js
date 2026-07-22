@@ -22,4 +22,4 @@ const VAPID_KEY = "BH4XFOg4RddXU-xPuEh3Loli2QiGk1XuXhX4K9jmDajsdMf3DkfgLJUcZ6Rhy
 const DB_URL = firebaseConfig.databaseURL;
 
 // PIN de acesso ao painel admin (troque por um número só seu)
-const ADMIN_PIN = "0000";
+const ADMIN_PIN = "891322";
