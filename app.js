@@ -79,7 +79,8 @@ function calcularDiasRestantes(vencimentoStr) {
 function statusCliente(vencimentoStr) {
   const dias = calcularDiasRestantes(vencimentoStr);
   if (dias < 0) return 'vencido';
-  if (dias <= 3) return 'vencendo';
+  if (dias === 0) return 'hoje';  // Hoje é separado de vencendo
+  if (dias <= 3) return 'vencendo';  // Vencendo = 1-3 dias (não inclui 0)
   return 'ativo';
 }
 
@@ -87,6 +88,7 @@ function badgeHtml(status) {
   const map = {
     ativo:    { classe: 'ok',     texto: 'Ativo' },
     vencendo: { classe: 'warn',   texto: 'Vencendo' },
+    hoje:     { classe: 'amarelo-card', texto: 'Vence Hoje' },
     vencido:  { classe: 'danger', texto: 'Vencido' }
   };
   const s = map[status] || map.ativo;
@@ -300,14 +302,11 @@ function renderizarResumo() {
 
   todos.forEach(c => {
     const status = statusCliente(c.vencimento);
-    const dias = calcularDiasRestantes(c.vencimento);
     
     if (status === 'ativo') ativos++;
-    if (status === 'vencendo') vencendo++;
+    if (status === 'vencendo') vencendo++;  // Agora NOT inclui "hoje"
     if (status === 'vencido') vencidos++;
-    
-    // Vencendo hoje = vencimento em 0 dias
-    if (dias === 0) vencendoHoje++;
+    if (status === 'hoje') vencendoHoje++;  // "Hoje" é contado separadamente
     
     if (c.fcmToken) comNotif++;
   });
@@ -956,8 +955,8 @@ function abrirModalVencendoHoje() {
   const vencendoHoje = Object.entries(clientes)
     .filter(([id, c]) => {
       if (!c.nome) return false;
-      const dias = calcularDiasRestantes(c.vencimento);
-      return dias === 0; // Exatamente hoje
+      const status = statusCliente(c.vencimento);
+      return status === 'hoje';  // Usa o novo status 'hoje'
     })
     .sort((a, b) => a[1].nome.localeCompare(b[1].nome));
 
