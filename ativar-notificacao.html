@@ -3,53 +3,95 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ativar Notificações — IPTV</title>
-<link rel="stylesheet" href="style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Ativar Notificações — Plano IPTV</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .icon { font-size: 64px; margin-bottom: 20px; }
+  h1 { color: #1a1a1a; margin-bottom: 10px; font-size: 28px; }
+  .subtitle { color: #666; margin-bottom: 30px; line-height: 1.5; }
+  .formulario { display: flex; flex-direction: column; gap: 15px; }
+  button {
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .status { 
+    padding: 16px; 
+    border-radius: 8px; 
+    margin-top: 20px; 
+    display: none;
+    font-size: 14px;
+  }
+  .status.sucesso {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    display: block;
+  }
+  .status.erro {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    display: block;
+  }
+  .loading { display: none; }
+  .loading.ativo { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
 
-<div class="login-wrap">
-  <div class="login-card" style="max-width: 420px;">
-    <div class="login-signal">● SINAL ATIVO</div>
-    <h1 id="tituloPagina">Ativar Notificações</h1>
-    <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 24px; line-height: 1.5;" id="descricaoPagina">
-      Receba um aviso automático quando seu plano estiver perto de vencer — direto no seu celular.
-    </p>
-
-    <div id="formularioAtivacao">
-      <div class="field">
-        <label style="font-size: 13px;">Email (opcional - receberá avisos também)</label>
-        <input type="email" id="inputEmail" placeholder="seu@email.com">
-      </div>
-
-      <button class="btn btn-primary" id="btnAtivar">🔔 Ativar Notificações</button>
-    </div>
-
-    <div id="mensagemSucesso" style="display: none; text-align: center;">
-      <p style="color: var(--success); font-size: 32px; margin-bottom: 12px;">✅</p>
-      <p style="color: var(--text); font-size: 16px; font-weight: 600; margin-bottom: 8px;">Notificações Ativadas!</p>
-      <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 20px; line-height: 1.5;">
-        Você vai receber avisos automáticos quando seu plano estiver vencendo.
-      </p>
-      <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 16px;">
-        Pode fechar esta janela agora.
-      </p>
-      <button class="btn btn-ghost" onclick="window.close()" style="font-size: 12px;">Fechar Janela</button>
-    </div>
-
-    <div class="error-msg" id="statusMsg"></div>
+<div class="container">
+  <div class="icon">🔔</div>
+  <h1>Ativar Notificações</h1>
+  <p class="subtitle">Receba avisos sobre o vencimento do seu plano IPTV</p>
+  
+  <div class="formulario">
+    <button class="btn-primary" id="btnAtivar">
+      <span id="btnTexto">🔔 Ativar Notificações</span>
+      <span class="loading" id="btnLoading">⏳</span>
+    </button>
   </div>
+
+  <div class="status" id="status"></div>
 </div>
 
-<!-- SDKs do Firebase (versão compat, sem precisar de build) -->
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 
 <script>
   // ============================================
-  // CONFIGURAÇÃO DO FIREBASE (EMBUTIDA)
+  // CONFIGURAÇÃO
   // ============================================
   const firebaseConfig = {
     apiKey: "AIzaSyB5Y2BMqHIBDAhZoHFwDzdG-UuvPR1-FcQ",
@@ -63,93 +105,120 @@
 
   const VAPID_KEY = "BH4XFOg4RddXU-xPuEh3Loli2QiGk1XuXhX4K9jmDajsdMf3DkfgLJUcZ6Rhy62-KjZ7FKpbGyiS5YnTwUA5D9w";
   const DB_URL = firebaseConfig.databaseURL;
-  const ADMIN_PIN = "891322";
+
+  // Inicializa Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
   // ============================================
-  // LÓGICA DE ATIVAÇÃO
+  // ELEMENTOS HTML
+  // ============================================
+  const btnAtivar = document.getElementById('btnAtivar');
+  const btnTexto = document.getElementById('btnTexto');
+  const btnLoading = document.getElementById('btnLoading');
+  const statusDiv = document.getElementById('status');
+
+  // ============================================
+  // OBTER ID DO CLIENTE
   // ============================================
   const params = new URLSearchParams(window.location.search);
   const clienteId = params.get('id');
 
-  const btnAtivar = document.getElementById('btnAtivar');
-  const statusMsg = document.getElementById('statusMsg');
-  const titulo = document.getElementById('tituloPagina');
-  const descricao = document.getElementById('descricaoPagina');
-  const inputEmail = document.getElementById('inputEmail');
-  const formularioAtivacao = document.getElementById('formularioAtivacao');
-  const mensagemSucesso = document.getElementById('mensagemSucesso');
-
   if (!clienteId) {
-    titulo.textContent = 'Link inválido';
-    descricao.textContent = 'Esse link de ativação não é válido. Fale com o suporte para receber um novo link.';
-    formularioAtivacao.style.display = 'none';
-  } else {
-    firebase.initializeApp(firebaseConfig);
+    statusDiv.textContent = '❌ Erro: ID do cliente não fornecido na URL';
+    statusDiv.classList.add('erro');
+    btnAtivar.disabled = true;
   }
 
+  // ============================================
+  // ATIVAR NOTIFICAÇÕES
+  // ============================================
   btnAtivar.addEventListener('click', async () => {
-    if (!clienteId) return;
     btnAtivar.disabled = true;
-    btnAtivar.textContent = 'Ativando...';
-    statusMsg.textContent = '';
+    btnTexto.style.display = 'none';
+    btnLoading.classList.add('ativo');
+    statusDiv.className = 'status';
+    statusDiv.textContent = '⏳ Processando...';
 
     try {
-      // Registra o service worker (necessário pro FCM funcionar)
+      console.log('🟦 1️⃣ Registrando service worker...');
       const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+      console.log('✅ Service worker registrado');
 
-      const messaging = firebase.messaging();
-
-      // Pede permissão nativa do navegador
+      console.log('🟦 2️⃣ Solicitando permissão do navegador...');
       const permissao = await Notification.requestPermission();
       if (permissao !== 'granted') {
-        throw new Error('Permissão negada. Você precisa permitir notificações para continuar.');
+        throw new Error('Você negou a permissão de notificações. Aceite para continuar.');
       }
+      console.log('✅ Permissão concedida');
 
-      // Gera o token único do dispositivo
+      console.log('🟦 3️⃣ Gerando FCM token...');
+      const messaging = firebase.messaging();
       const token = await messaging.getToken({
         vapidKey: VAPID_KEY,
         serviceWorkerRegistration: registration
       });
 
-      if (!token) throw new Error('Não foi possível gerar o token');
-
-      // Prepara dados pra salvar
-      const dadosAtualizacao = { fcmToken: token };
-      const email = inputEmail.value.trim();
-      if (email) {
-        // Salva TAMBÉM no campo email principal pra sincronizar
-        dadosAtualizacao.email = email;
-        dadosAtualizacao.emailNotificacao = email;
+      if (!token) {
+        throw new Error('Não foi possível gerar o token de notificação');
       }
+      console.log('✅ Token gerado:', token.substring(0, 30) + '...');
 
-      console.log('📤 Salvando no Firebase:', { clienteId, dadosAtualizacao });
+      console.log('🟦 4️⃣ Salvando no Firebase...');
+      console.log('   Cliente:', clienteId);
+      console.log('   Token:', token.substring(0, 50) + '...');
 
-      // Salva o token + email (se fornecido) no Firebase, vinculado ao cliente
+      // Salva APENAS o fcmToken, nada mais
       const res = await fetch(`${DB_URL}/clientes/${clienteId}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosAtualizacao)
+        body: JSON.stringify({ fcmToken: token })
       });
 
-      if (!res.ok) throw new Error(`Firebase respondeu com erro: ${res.status}`);
+      console.log('   Response status:', res.status);
+      if (!res.ok) {
+        throw new Error(`Firebase retornou erro ${res.status}`);
+      }
 
-      console.log('✅ Dados salvos com sucesso no Firebase!');
+      const resData = await res.json();
+      console.log('✅ Dados salvos no Firebase');
+      console.log('   Response:', resData);
 
-      formularioAtivacao.style.display = 'none';
-      mensagemSucesso.style.display = 'block';
+      console.log('\n🎉 SUCESSO! Notificações ativadas!');
+      
+      statusDiv.textContent = '✅ Notificações ativadas com sucesso! Você receberá avisos sobre seu plano.';
+      statusDiv.classList.add('sucesso');
+      btnTexto.textContent = '✅ Notificações Ativadas';
+      btnTexto.style.display = 'inline';
+      btnLoading.classList.remove('ativo');
 
     } catch (err) {
-      console.error(err);
-      statusMsg.textContent = 'Erro: ' + err.message + '. Verifique e tente novamente.';
+      console.error('❌ ERRO:', err.message);
+      statusDiv.textContent = '❌ Erro: ' + err.message;
+      statusDiv.classList.add('erro');
+      btnTexto.style.display = 'inline';
+      btnLoading.classList.remove('ativo');
       btnAtivar.disabled = false;
-      btnAtivar.textContent = '🔔 Ativar Notificações';
     }
   });
 
-  // Permite ativar com Enter no campo de email
-  inputEmail.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') btnAtivar.click();
-  });
+  // Listener para notificações quando app está em primeiro plano
+  console.log('Aguardando mensagens push...');
+  if ('serviceWorker' in navigator) {
+    const messaging = firebase.messaging();
+    messaging.onMessage((payload) => {
+      console.log('📨 Notificação recebida em primeiro plano:', payload);
+      const titulo = payload.notification?.title || 'Aviso';
+      const opcoes = {
+        body: payload.notification?.body || '',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+      };
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification(titulo, opcoes);
+      });
+    });
+  }
 </script>
 
 </body>
