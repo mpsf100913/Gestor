@@ -2,7 +2,7 @@
 // ENVIO MANUAL — push e/ou e-mail para clientes selecionados no painel admin
 // ============================================
 
-const { inicializarFirebase, substituirVariaveis, enviarPush, enviarEmail, linkWhatsappSuporte } = require('./lib/mensagens');
+const { inicializarFirebase, substituirVariaveis, enviarPush, enviarEmail, linkWhatsappSuporte, gerarLinkRedirecionamento } = require('./lib/mensagens');
 
 const admin = inicializarFirebase();
 const db = admin.database();
@@ -24,6 +24,10 @@ module.exports = async (req, res) => {
       return res.status(400).json({ ok: false, erro: 'Mensagem vazia' });
     }
 
+    // Carrega a configuração de redirecionamento
+    const snapshotConfig = await db.ref('config/templates').once('value');
+    const config = snapshotConfig.val() || {};
+
     let enviados = 0;
 
     for (const id of ids) {
@@ -33,19 +37,24 @@ module.exports = async (req, res) => {
 
       const corpo = substituirVariaveis(mensagem, cliente);
       const tituloAssunto = substituirVariaveis(assunto || 'Aviso do seu plano IPTV', cliente);
-      const linkWhatsapp = linkWhatsappSuporte(corpo);
+      const linkClick = gerarLinkRedirecionamento(config, corpo, cliente);
 
-      console.log(`Enviando para ${cliente.nome}:`, { imagem, linkWhatsapp: linkWhatsapp.substring(0, 50) });
+      console.log(`Enviando para ${cliente.nome}:`, { imagem, linkClick: linkClick.substring(0, 50) });
 
       let algumEnvio = false;
 
       if (canal === 'push' || canal === 'ambos') {
-        const ok = await enviarPush(cliente.fcmToken, tituloAssunto, corpo, linkWhatsapp, imagem);
+        const ok = await enviarPush(cliente.fcmToken, tituloAssunto, corpo, linkClick, imagem);
         if (ok) algumEnvio = true;
       }
       if (canal === 'email' || canal === 'ambos') {
         const ok = await enviarEmail(cliente.email, tituloAssunto, corpo);
         if (ok) algumEnvio = true;
+        // Se cliente registrou um email customizado, envia também lá
+        if (cliente.emailNotificacao && cliente.emailNotificacao !== cliente.email) {
+          const ok2 = await enviarEmail(cliente.emailNotificacao, tituloAssunto, corpo);
+          if (ok2) algumEnvio = true;
+        }
       }
 
       if (algumEnvio) enviados++;
