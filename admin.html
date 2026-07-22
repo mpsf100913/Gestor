@@ -7,6 +7,18 @@
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase SDKs (CARREGAR PRIMEIRO) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+
+<script>
+  // Verifica autenticação PRIMEIRO
+  if (!sessionStorage.getItem('admin_auth')) {
+    window.location.href = 'index.html';
+  }
+</script>
 </head>
 <body>
 
@@ -618,7 +630,7 @@
 
 <script>
   // ============================================
-  // CONFIGURAÇÃO FIREBASE - WINDOW (global pra app.js)
+  // CONFIGURAÇÃO FIREBASE
   // ============================================
   const firebaseConfig = {
     apiKey: "AIzaSyB5Y2BMqHIBDAhZoHFwDzdG-UuvPR1-FcQ",
@@ -634,13 +646,9 @@
   const DB_URL = firebaseConfig.databaseURL;
   const ADMIN_PIN = "891322";
 
-  // Inicializa Firebase AQUI
+  // Inicializa Firebase
   firebase.initializeApp(firebaseConfig);
-
-  // Verifica autenticação
-  if (!sessionStorage.getItem('admin_auth')) {
-    window.location.href = 'index.html';
-  }
+  console.log('✅ Firebase pronto, carregando dados...');
 </script>
 
 <script src="js/app.js"></script>
