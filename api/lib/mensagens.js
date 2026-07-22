@@ -38,20 +38,24 @@ function substituirVariaveis(template, cliente, dias) {
 
 async function enviarPush(fcmToken, titulo, corpo, linkClick, imagemUrl) {
   if (!fcmToken) {
-    console.log('❌ FCM Token vazio, não enviando push');
+    console.log('❌ FCM Token vazio');
     return false;
   }
 
   try {
-    // Verifica autenticação do Firebase
-    const admin = require('firebase-admin');
-    if (!admin.apps.length) {
-      console.error('❌ Firebase não inicializado');
-      return false;
+    // Verifica se Firebase está inicializado
+    let messaging;
+    if (!admin.apps || admin.apps.length === 0) {
+      console.log('Inicializando Firebase Admin SDK...');
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.FIREBASE_DATABASE_URL
+      });
     }
 
-    const messaging = admin.messaging();
-    
+    messaging = admin.messaging();
+
     const payload = {
       token: fcmToken,
       notification: { 
@@ -73,17 +77,18 @@ async function enviarPush(fcmToken, titulo, corpo, linkClick, imagemUrl) {
     };
 
     if (imagemUrl && imagemUrl.trim()) {
+      console.log('Adicionando imagem ao push...');
       payload.notification.image = imagemUrl;
       payload.webpush.notification.image = imagemUrl;
     }
 
-    console.log(`📤 Enviando PUSH: "${titulo}"`);
-    console.log(`   Token: ${fcmToken.substring(0, 30)}...`);
+    console.log(`📤 Enviando PUSH para: ${titulo}`);
+    console.log(`   FCM Token: ${fcmToken.substring(0, 30)}...`);
     
-    const resultado = await messaging.send(payload);
+    const msgId = await messaging.send(payload);
     
     console.log(`✅ PUSH ENVIADO COM SUCESSO!`);
-    console.log(`   ID: ${resultado}`);
+    console.log(`   Message ID: ${msgId}`);
     return true;
     
   } catch (err) {
@@ -96,17 +101,23 @@ async function enviarPush(fcmToken, titulo, corpo, linkClick, imagemUrl) {
 }
 
 async function enviarEmail(destino, assunto, corpo) {
-  if (!destino || !EMAIL_REMETENTE) return false;
+  if (!destino || !EMAIL_REMETENTE) {
+    console.log(`⚠️ Email não enviado: destino ou remetente vazio`);
+    return false;
+  }
+
   try {
+    console.log(`📧 Enviando email para: ${destino}`);
     await resend.emails.send({
       from: EMAIL_REMETENTE,
       to: destino,
       subject: assunto,
       html: `<p>${corpo}</p>`
     });
+    console.log(`✅ Email enviado com sucesso`);
     return true;
   } catch (err) {
-    console.error('Erro ao enviar e-mail:', err.message);
+    console.error(`❌ Erro ao enviar e-mail: ${err.message}`);
     return false;
   }
 }
@@ -129,7 +140,6 @@ function gerarLinkRedirecionamento(config, mensagem, cliente) {
   if (tipo === 'url') {
     const url = config?.urlCustomizada || '';
     if (url) {
-      // Tenta substituir variáveis na URL se houver
       return url
         .replace('{nome}', cliente?.nome || '')
         .replace('{cliente_id}', cliente?.id || '')
