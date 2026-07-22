@@ -21,6 +21,7 @@
   <button class="tab-btn" data-tab="planos">Planos</button>
   <button class="tab-btn" data-tab="mensagens">Mensagens</button>
   <button class="tab-btn" data-tab="massa">Notificação em Massa</button>
+  <button class="tab-btn" data-tab="financeiro">Financeiro</button>
 </div>
 
 <div class="container">
@@ -36,6 +37,10 @@
       <div class="summary-card warn">
         <div class="label">Vencendo (3 dias)</div>
         <div class="value" id="countVencendo">0</div>
+      </div>
+      <div class="summary-card amarelo-card" onclick="abrirModalVencendoHoje()">
+        <div class="label">Vencendo Hoje</div>
+        <div class="value" id="countVencendoHoje">0</div>
       </div>
       <div class="summary-card danger">
         <div class="label">Vencidos</div>
@@ -96,6 +101,7 @@
           <tr>
             <th><input type="checkbox" id="checkTodos"></th>
             <th>Nome</th>
+            <th>Usuário</th>
             <th>Servidor</th>
             <th>Valor</th>
             <th>Vencimento</th>
@@ -224,6 +230,33 @@
       </div>
     </div>
 
+    <div class="msg-card">
+      <h3>Configuração: Redirecionamento do Push</h3>
+      <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 12px;">
+        Para onde o cliente será direcionado ao clicar no push (vale para envios automáticos e manuais).
+      </p>
+      <div class="field">
+        <label>
+          <input type="radio" name="redirecionamento" value="whatsapp" checked> 
+          WhatsApp (padrão) - Abre o WhatsApp com mensagem pré-preenchida
+        </label>
+      </div>
+      <div class="field">
+        <label>
+          <input type="radio" name="redirecionamento" value="email"> 
+          E-mail Customizado - Abre o cliente de e-mail do usuário
+        </label>
+        <input type="email" id="emailCustomizadoRedirecionar" placeholder="suporte@seusite.com" style="margin-top: 8px; display: none;">
+      </div>
+      <div class="field">
+        <label>
+          <input type="radio" name="redirecionamento" value="url"> 
+          URL Customizada - Redireciona para um link específico
+        </label>
+        <input type="text" id="urlCustomizadaRedirecionar" placeholder="https://seu-site.com/renovacao" style="margin-top: 8px; display: none;">
+      </div>
+    </div>
+
     <button class="btn btn-primary" id="btnSalvarMensagens" style="max-width: 240px;">Salvar Mensagens</button>
   </div>
 
@@ -283,6 +316,70 @@
     <button class="btn btn-amber" id="btnDispararMassa" style="max-width: 260px;">📣 Disparar para Grupo Filtrado</button>
   </div>
 
+  <!-- ABA: FINANCEIRO -->
+  <div class="tab-panel hidden" id="tab-financeiro">
+    <div class="summary-grid">
+      <div class="summary-card success">
+        <div class="label">Receita Mês Atual</div>
+        <div class="value" id="receitaMesAtual">R$ 0,00</div>
+      </div>
+      <div class="summary-card ok">
+        <div class="label">Receita Ativa</div>
+        <div class="value" id="receitaAtiva">R$ 0,00</div>
+      </div>
+      <div class="summary-card warn">
+        <div class="label">Receita Vencendo</div>
+        <div class="value" id="receitaVencendo">R$ 0,00</div>
+      </div>
+      <div class="summary-card danger">
+        <div class="label">Receita em Atraso</div>
+        <div class="value" id="receitaAtraso">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div class="section-header collapsible-header" id="toggleResumoServidorFinanceiro">
+      <h3>Resumo Financeiro por Servidor</h3>
+      <span class="collapse-arrow" id="setaResumoServidorFinanceiro">▸</span>
+    </div>
+    <div class="table-wrap collapsible-content" id="conteudoResumoServidorFinanceiro" style="margin-bottom: 24px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Servidor</th>
+            <th>Clientes Ativos</th>
+            <th>Receita Ativa</th>
+            <th>Clientes em Atraso</th>
+            <th>Receita em Atraso</th>
+            <th>Total Esperado</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaResumoFinanceiroServidor"></tbody>
+      </table>
+    </div>
+
+    <div class="section-header collapsible-header" id="toggleHistoricoRenovacoes">
+      <h3>Histórico de Renovações</h3>
+      <span class="collapse-arrow" id="setaHistoricoRenovacoes">▸</span>
+    </div>
+    <div class="table-wrap collapsible-content" id="conteudoHistoricoRenovacoes">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Valor</th>
+            <th>Novo Vencimento</th>
+            <th>Servidor</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaHistoricoRenovacoes"></tbody>
+      </table>
+      <div class="empty-state" id="emptyHistorico" style="display:none;">
+        Nenhuma renovação registrada ainda.
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- MODAL CADASTRO/EDIÇÃO DE CLIENTE -->
@@ -330,6 +427,10 @@
     <div class="field">
       <label>Senha (acesso IPTV)</label>
       <input type="text" id="fSenha" placeholder="senha do painel/app">
+    </div>
+    <div class="field">
+      <label>Observação (opcional)</label>
+      <textarea id="fObservacao" placeholder="Anotações sobre este cliente..." style="min-height: 80px; resize: vertical;"></textarea>
     </div>
 
     <div class="modal-actions">
@@ -408,6 +509,35 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnCancelarNotificar">Cancelar</button>
       <button class="btn btn-primary" id="btnEnviarNotificacaoManual">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VENCENDO HOJE -->
+<div class="modal-overlay hidden" id="modalVencendoHoje">
+  <div class="modal" style="max-width: 600px; max-height: 70vh; overflow-y: auto;">
+    <h2>Clientes Vencendo Hoje</h2>
+    <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;" id="contadorVencendoHoje">Carregando...</p>
+    
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Servidor</th>
+            <th>Valor</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaVencendoHoje"></tbody>
+      </table>
+      <div class="empty-state" id="emptyVencendoHoje" style="display:none;">
+        Nenhum cliente vencendo hoje. Ótima notícia!
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnFecharVencendoHoje">Fechar</button>
     </div>
   </div>
 </div>
