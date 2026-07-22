@@ -53,9 +53,26 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // HELPERS DE STATUS
 // ============================================
 function calcularDiasRestantes(vencimentoStr) {
+  if (!vencimentoStr) return -999;
+  
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  const vencimento = new Date(vencimentoStr + 'T00:00:00');
+  
+  // Converte DD/MM/YYYY para YYYY-MM-DD se necessário
+  let dataIso = vencimentoStr;
+  if (vencimentoStr.includes('/')) {
+    const [dia, mes, ano] = vencimentoStr.split('/');
+    dataIso = `${ano}-${mes}-${dia}`;
+  }
+  
+  const vencimento = new Date(dataIso + 'T00:00:00');
+  
+  // Verifica se a data é válida
+  if (isNaN(vencimento.getTime())) {
+    console.error('Data inválida:', vencimentoStr, 'convertida para:', dataIso);
+    return -999;
+  }
+  
   return Math.round((vencimento - hoje) / (1000 * 60 * 60 * 24));
 }
 
@@ -280,21 +297,17 @@ function atualizarContadorSelecionados() {
 function renderizarResumo() {
   const todos = Object.values(clientes).filter(c => c.nome);
   let ativos = 0, vencendo = 0, vencidos = 0, vencendoHoje = 0, comNotif = 0;
-  const hoje = new Date();
-  const hojeStr = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
-  const hojeIso = hoje.toISOString().split('T')[0]; // YYYY-MM-DD
 
   todos.forEach(c => {
     const status = statusCliente(c.vencimento);
+    const dias = calcularDiasRestantes(c.vencimento);
+    
     if (status === 'ativo') ativos++;
     if (status === 'vencendo') vencendo++;
     if (status === 'vencido') vencidos++;
     
-    // Verifica se vence hoje (trata diferentes formatos de data)
-    const vencNormalizado = c.vencimento ? c.vencimento.replace(/\//g, '-') : '';
-    if (vencNormalizado === hojeIso || c.vencimento === hojeStr) {
-      vencendoHoje++;
-    }
+    // Vencendo hoje = vencimento em 0 dias
+    if (dias === 0) vencendoHoje++;
     
     if (c.fcmToken) comNotif++;
   });
@@ -940,15 +953,11 @@ function enviarWhatsappRapido(tipo) {
 const modalVencendoHoje = document.getElementById('modalVencendoHoje');
 
 function abrirModalVencendoHoje() {
-  const hoje = new Date();
-  const hojeStr = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
-  const hojeIso = hoje.toISOString().split('T')[0]; // YYYY-MM-DD
-  
   const vencendoHoje = Object.entries(clientes)
     .filter(([id, c]) => {
       if (!c.nome) return false;
-      const vencNormalizado = c.vencimento ? c.vencimento.replace(/\//g, '-') : '';
-      return vencNormalizado === hojeIso || c.vencimento === hojeStr;
+      const dias = calcularDiasRestantes(c.vencimento);
+      return dias === 0; // Exatamente hoje
     })
     .sort((a, b) => a[1].nome.localeCompare(b[1].nome));
 
