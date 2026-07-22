@@ -280,14 +280,22 @@ function atualizarContadorSelecionados() {
 function renderizarResumo() {
   const todos = Object.values(clientes).filter(c => c.nome);
   let ativos = 0, vencendo = 0, vencidos = 0, vencendoHoje = 0, comNotif = 0;
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = new Date();
+  const hojeStr = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
+  const hojeIso = hoje.toISOString().split('T')[0]; // YYYY-MM-DD
 
   todos.forEach(c => {
     const status = statusCliente(c.vencimento);
     if (status === 'ativo') ativos++;
     if (status === 'vencendo') vencendo++;
     if (status === 'vencido') vencidos++;
-    if (c.vencimento === hoje) vencendoHoje++;
+    
+    // Verifica se vence hoje (trata diferentes formatos de data)
+    const vencNormalizado = c.vencimento ? c.vencimento.replace(/\//g, '-') : '';
+    if (vencNormalizado === hojeIso || c.vencimento === hojeStr) {
+      vencendoHoje++;
+    }
+    
     if (c.fcmToken) comNotif++;
   });
 
@@ -932,9 +940,16 @@ function enviarWhatsappRapido(tipo) {
 const modalVencendoHoje = document.getElementById('modalVencendoHoje');
 
 function abrirModalVencendoHoje() {
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = new Date();
+  const hojeStr = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
+  const hojeIso = hoje.toISOString().split('T')[0]; // YYYY-MM-DD
+  
   const vencendoHoje = Object.entries(clientes)
-    .filter(([id, c]) => c.nome && c.vencimento === hoje)
+    .filter(([id, c]) => {
+      if (!c.nome) return false;
+      const vencNormalizado = c.vencimento ? c.vencimento.replace(/\//g, '-') : '';
+      return vencNormalizado === hojeIso || c.vencimento === hojeStr;
+    })
     .sort((a, b) => a[1].nome.localeCompare(b[1].nome));
 
   const tbody = document.getElementById('tabelaVencendoHoje');
