@@ -265,6 +265,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
 .badge.ok { background: rgba(53,208,192,0.12); color: var(--accent); }
 .badge.warn { background: rgba(245,185,66,0.12); color: var(--warn); }
+.badge.amarelo-card { background: rgba(255,165,0,0.12); color: var(--amarelo); }
 .badge.danger { background: rgba(239,91,91,0.12); color: var(--danger); }
 .badge.neutral { background: rgba(143,161,179,0.12); color: var(--text-dim); }
 
