@@ -62,7 +62,7 @@
 
   <div class="container">
     <div class="sidebar">
-      <button onclick="abaCli entes()" class="tab-btn active">📱 Clientes</button>
+      <button onclick="abaClientes()" class="tab-btn active">📱 Clientes</button>
       <button onclick="abaServidores()" class="tab-btn">🖥️ Servidores</button>
       <button onclick="abaPlanos()" class="tab-btn">💰 Planos</button>
       <button onclick="abaCobranca()" class="tab-btn">📤 Cobrança</button>
@@ -74,19 +74,19 @@
       <div id="tab-clientes" class="tab active">
         <h2>📱 Clientes</h2>
         <div class="cards-row">
-          <div class="card-stat" onclick="abaCobranca()">
+          <div class="card-stat">
             <h3 id="total-ativos">0</h3>
             <p>Ativos</p>
           </div>
-          <div class="card-stat" onclick="abaCobranca()">
+          <div class="card-stat">
             <h3 id="total-vencendo">0</h3>
             <p>Vencendo em 3 dias</p>
           </div>
-          <div class="card-stat" onclick="abaCobranca()">
+          <div class="card-stat">
             <h3 id="total-hoje">0</h3>
             <p>Vence Hoje</p>
           </div>
-          <div class="card-stat" onclick="abaCobranca()">
+          <div class="card-stat">
             <h3 id="total-vencido">0</h3>
             <p>Vencidos</p>
           </div>
@@ -154,15 +154,15 @@
         <h2>📤 Cobrança Manual</h2>
         
         <div class="cards-row">
-          <div class="card-stat" onclick="listarVencendo('3dias')">
+          <div class="card-stat">
             <h3 id="cobranca-vencendo">0</h3>
             <p>Vencendo em 3 dias</p>
           </div>
-          <div class="card-stat" onclick="listarVencendo('hoje')">
+          <div class="card-stat">
             <h3 id="cobranca-hoje">0</h3>
             <p>Vence Hoje</p>
           </div>
-          <div class="card-stat" onclick="listarVencendo('vencido')">
+          <div class="card-stat">
             <h3 id="cobranca-vencido">0</h3>
             <p>Vencidos</p>
           </div>
@@ -710,7 +710,6 @@
     function atualizarValor() {
       const sel = document.getElementById('cli-plano');
       const valor = sel.selectedOptions[0]?.dataset.valor;
-      // Mostra o valor selecionado
     }
 
     // COBRANÇA
@@ -767,13 +766,6 @@
       }
     }
 
-    function listarVencendo(tipo) {
-      // Filtrar e mostrar apenas clientes vencendo
-      const busca = document.getElementById('busca');
-      busca.value = '';
-      renderizarCobranca();
-    }
-
     async function renovarCliente(id) {
       const novaData = prompt('Nova data de vencimento (YYYY-MM-DD):');
       if (!novaData) return;
@@ -800,47 +792,34 @@
     }
 
     // ABAS
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    });
-
-    function abaCli entes() {
-      document.querySelectorAll('.tab-btn')[0].classList.add('active');
-      document.getElementById('tab-clientes').classList.add('active');
-      document.querySelectorAll('.tab-btn').forEach((b, i) => i > 0 && b.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach((t, i) => i > 0 && t.classList.remove('active'));
+    function abaClientes() {
+      mudarAba(0, 'tab-clientes');
     }
 
     function abaServidores() {
-      document.querySelectorAll('.tab-btn')[1].classList.add('active');
-      document.getElementById('tab-servidores').classList.add('active');
-      document.querySelectorAll('.tab-btn').forEach((b, i) => i !== 1 && b.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach((t, i) => i !== 1 && t.classList.remove('active'));
+      mudarAba(1, 'tab-servidores');
     }
 
     function abaPlanos() {
-      document.querySelectorAll('.tab-btn')[2].classList.add('active');
-      document.getElementById('tab-planos').classList.add('active');
-      document.querySelectorAll('.tab-btn').forEach((b, i) => i !== 2 && b.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach((t, i) => i !== 2 && t.classList.remove('active'));
+      mudarAba(2, 'tab-planos');
     }
 
     function abaCobranca() {
-      document.querySelectorAll('.tab-btn')[3].classList.add('active');
-      document.getElementById('tab-cobranca').classList.add('active');
-      document.querySelectorAll('.tab-btn').forEach((b, i) => i !== 3 && b.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach((t, i) => i !== 3 && t.classList.remove('active'));
+      mudarAba(3, 'tab-cobranca');
     }
 
     function abaFinanceiro() {
-      document.querySelectorAll('.tab-btn')[4].classList.add('active');
-      document.getElementById('tab-financeiro').classList.add('active');
-      document.querySelectorAll('.tab-btn').forEach((b, i) => i !== 4 && b.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach((t, i) => i !== 4 && t.classList.remove('active'));
+      mudarAba(4, 'tab-financeiro');
+    }
+
+    function mudarAba(index, tabId) {
+      document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        b.classList.toggle('active', i === index);
+      });
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.remove('active');
+      });
+      document.getElementById(tabId).classList.add('active');
     }
 
     // TOAST
