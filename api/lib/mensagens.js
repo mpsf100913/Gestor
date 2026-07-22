@@ -37,8 +37,21 @@ function substituirVariaveis(template, cliente, dias) {
 }
 
 async function enviarPush(fcmToken, titulo, corpo, linkClick, imagemUrl) {
-  if (!fcmToken) return false;
+  if (!fcmToken) {
+    console.log('❌ FCM Token vazio, não enviando push');
+    return false;
+  }
+
   try {
+    // Verifica autenticação do Firebase
+    const admin = require('firebase-admin');
+    if (!admin.apps.length) {
+      console.error('❌ Firebase não inicializado');
+      return false;
+    }
+
+    const messaging = admin.messaging();
+    
     const payload = {
       token: fcmToken,
       notification: { 
@@ -56,39 +69,28 @@ async function enviarPush(fcmToken, titulo, corpo, linkClick, imagemUrl) {
           icon: '/icon-192.png',
           badge: '/icon-192.png'
         }
-      },
-      apns: {
-        payload: {
-          aps: {
-            alert: {
-              title: titulo,
-              body: corpo
-            }
-          }
-        }
       }
     };
 
-    // Adiciona imagem se fornecida
     if (imagemUrl && imagemUrl.trim()) {
-      console.log('Enviando push com imagem:', imagemUrl);
       payload.notification.image = imagemUrl;
       payload.webpush.notification.image = imagemUrl;
-      payload.android = {
-        notification: {
-          imageUrl: imagemUrl
-        }
-      };
-      // Para Apple
-      payload.apns.payload.aps.mutableContent = true;
     }
 
-    console.log('Payload enviado:', JSON.stringify(payload, null, 2));
-    await admin.messaging().send(payload);
+    console.log(`📤 Enviando PUSH: "${titulo}"`);
+    console.log(`   Token: ${fcmToken.substring(0, 30)}...`);
+    
+    const resultado = await messaging.send(payload);
+    
+    console.log(`✅ PUSH ENVIADO COM SUCESSO!`);
+    console.log(`   ID: ${resultado}`);
     return true;
+    
   } catch (err) {
-    console.error('Erro ao enviar push:', err.message);
-    console.error('Stack:', err);
+    console.error(`❌ ERRO AO ENVIAR PUSH`);
+    console.error(`   Mensagem: ${err.message}`);
+    console.error(`   Código: ${err.code}`);
+    console.error(`   Detalhes:`, err);
     return false;
   }
 }
