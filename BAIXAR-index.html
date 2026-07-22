@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestor IPTV - Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-width: 400px; width: 100%; }
+    h1 { text-align: center; color: #333; margin-bottom: 30px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; color: #555; font-weight: 600; }
+    input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+    input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+    button { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; transition: background 0.3s; }
+    button:hover { background: #764ba2; }
+    .error { color: #e74c3c; text-align: center; margin-bottom: 20px; padding: 10px; background: #fadbd8; border-radius: 5px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Gestor IPTV</h1>
+    <div class="error" id="erro"></div>
+    <form id="formLogin">
+      <div class="form-group">
+        <label for="pin">PIN:</label>
+        <input type="password" id="pin" placeholder="Digite o PIN" maxlength="6">
+      </div>
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <script>
+    const PIN_CORRETO = '891322';
+
+    document.getElementById('formLogin').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const pin = document.getElementById('pin').value;
+      const erroDiv = document.getElementById('erro');
+
+      if (pin === PIN_CORRETO) {
+        localStorage.setItem('auth', 'ok');
+        window.location.href = 'admin.html';
+      } else {
+        erroDiv.textContent = '❌ PIN incorreto!';
+        erroDiv.style.display = 'block';
+        document.getElementById('pin').value = '';
+      }
+    });
+
+    // Se já logado, vai pro admin
+    if (localStorage.getItem('auth') === 'ok') {
+      window.location.href = 'admin.html';
+    }
+  </script>
+</body>
+</html>

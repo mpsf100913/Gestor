@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestor IPTV - Admin</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 24px; }
+    .btn-logout { background: rgba(255,255,255,0.2); padding: 8px 16px; border: none; color: white; border-radius: 5px; cursor: pointer; }
+    .container { display: flex; min-height: calc(100vh - 70px); }
+    .sidebar { width: 250px; background: white; border-right: 1px solid #ddd; }
+    .sidebar button { display: block; width: 100%; padding: 15px 20px; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; border-bottom: 1px solid #f0f0f0; transition: background 0.2s; }
+    .sidebar button:hover { background: #f9f9f9; }
+    .sidebar button.active { background: #e8eaf6; color: #667eea; font-weight: 600; }
+    .main { flex: 1; padding: 20px; overflow-y: auto; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+    .card-stat { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; }
+    .card-stat h3 { font-size: 24px; margin-bottom: 10px; }
+    .card-stat p { font-size: 12px; opacity: 0.9; }
+    h2 { margin-bottom: 20px; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+    th { background: #f9f9f9; font-weight: 600; }
+    tr:hover { background: #f9f9f9; }
+    .btn { padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+    .btn:hover { background: #764ba2; }
+    .btn-small { padding: 5px 10px; font-size: 12px; }
+    .btn-danger { background: #e74c3c; }
+    .btn-success { background: #27ae60; }
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 15px 20px; border-radius: 5px; z-index: 2000; display: none; }
+    .toast.show { display: block; animation: slideIn 0.3s; }
+    .toast.error { background: #e74c3c; }
+    @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-ativo { background: #d4edda; color: #155724; }
+    .badge-vencendo { background: #fff3cd; color: #856404; }
+    .badge-vencido { background: #f8d7da; color: #721c24; }
+    .search-bar { margin-bottom: 20px; }
+    .search-bar input { width: 300px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎬 Gestor IPTV</h1>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </header>
+
+  <div class="container">
+    <div class="sidebar">
+      <button onclick="abaCli entes()" class="tab-btn active">📱 Clientes</button>
+      <button onclick="abaServidores()" class="tab-btn">🖥️ Servidores</button>
+      <button onclick="abaPlanos()" class="tab-btn">💰 Planos</button>
+      <button onclick="abaCobranca()" class="tab-btn">📤 Cobrança</button>
+      <button onclick="abaFinanceiro()" class="tab-btn">📊 Financeiro</button>
+    </div>
+
+    <div class="main">
+      <!-- ABA CLIENTES -->
+      <div id="tab-clientes" class="tab active">
+        <h2>📱 Clientes</h2>
+        <div class="cards-row">
+          <div class="card-stat" onclick="abaCobranca()">
+            <h3 id="total-ativos">0</h3>
+            <p>Ativos</p>
+          </div>
+          <div class="card-stat" onclick="abaCobranca()">
+            <h3 id="total-vencendo">0</h3>
+            <p>Vencendo em 3 dias</p>
+          </div>
+          <div class="card-stat" onclick="abaCobranca()">
+            <h3 id="total-hoje">0</h3>
+            <p>Vence Hoje</p>
+          </div>
+          <div class="card-stat" onclick="abaCobranca()">
+            <h3 id="total-vencido">0</h3>
+            <p>Vencidos</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="search-bar">
+              <input type="text" id="busca" placeholder="Buscar cliente..." onkeyup="renderizarClientes()">
+            </div>
+            <button class="btn btn-success" onclick="abrirModalCliente()">+ Novo Cliente</button>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>WhatsApp</th>
+                <th>Email</th>
+                <th>Servidor</th>
+                <th>Plano</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-clientes"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA SERVIDORES -->
+      <div id="tab-servidores" class="tab">
+        <h2>🖥️ Servidores</h2>
+        <button class="btn btn-success" onclick="abrirModalServidor()">+ Novo Servidor</button>
+        <table style="margin-top: 20px;">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-servidores"></tbody>
+        </table>
+      </div>
+
+      <!-- ABA PLANOS -->
+      <div id="tab-planos" class="tab">
+        <h2>💰 Planos</h2>
+        <button class="btn btn-success" onclick="abrirModalPlano()">+ Novo Plano</button>
+        <table style="margin-top: 20px;">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Valor</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-planos"></tbody>
+        </table>
+      </div>
+
+      <!-- ABA COBRANÇA -->
+      <div id="tab-cobranca" class="tab">
+        <h2>📤 Cobrança Manual</h2>
+        
+        <div class="cards-row">
+          <div class="card-stat" onclick="listarVencendo('3dias')">
+            <h3 id="cobranca-vencendo">0</h3>
+            <p>Vencendo em 3 dias</p>
+          </div>
+          <div class="card-stat" onclick="listarVencendo('hoje')">
+            <h3 id="cobranca-hoje">0</h3>
+            <p>Vence Hoje</p>
+          </div>
+          <div class="card-stat" onclick="listarVencendo('vencido')">
+            <h3 id="cobranca-vencido">0</h3>
+            <p>Vencidos</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Clientes para Cobrança</h3>
+          <table style="margin-top: 20px;">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="check-todos" onclick="selecionarTodos()"></th>
+                <th>Nome</th>
+                <th>WhatsApp</th>
+                <th>Email</th>
+                <th>Vencimento</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-cobranca"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Enviar Notificação</h3>
+          <div class="form-group">
+            <label>Tipo de Notificação:</label>
+            <select id="tipo-notif">
+              <option value="push">📲 Push Notification</option>
+              <option value="email">📧 Email</option>
+              <option value="whatsapp">💬 WhatsApp</option>
+              <option value="todos">📢 Todos</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Mensagem:</label>
+            <textarea id="msg-notif" placeholder="Digite a mensagem..."></textarea>
+          </div>
+          <button class="btn btn-success" onclick="enviarNotificacoes()">✉️ Enviar</button>
+        </div>
+      </div>
+
+      <!-- ABA FINANCEIRO -->
+      <div id="tab-financeiro" class="tab">
+        <h2>📊 Financeiro</h2>
+        <div class="cards-row">
+          <div class="card-stat">
+            <h3 id="receita-mes">R$ 0,00</h3>
+            <p>Receita este mês</p>
+          </div>
+          <div class="card-stat">
+            <h3 id="receita-ativa">R$ 0,00</h3>
+            <p>Receita Ativa</p>
+          </div>
+          <div class="card-stat">
+            <h3 id="receita-vencendo">R$ 0,00</h3>
+            <p>Receita Vencendo</p>
+          </div>
+          <div class="card-stat">
+            <h3 id="receita-vencida">R$ 0,00</h3>
+            <p>Receita Vencida</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Histórico de Renovações</h3>
+          <table style="margin-top: 20px;">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Valor</th>
+                <th>Novo Vencimento</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-financeiro"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAIS -->
+  <div id="modal-cliente" class="modal">
+    <div class="modal-content">
+      <h3 id="titulo-modal">Novo Cliente</h3>
+      <form id="form-cliente">
+        <div class="form-group">
+          <label>Nome:</label>
+          <input type="text" id="cli-nome" required>
+        </div>
+        <div class="form-group">
+          <label>WhatsApp:</label>
+          <input type="text" id="cli-whatsapp" required>
+        </div>
+        <div class="form-group">
+          <label>Email:</label>
+          <input type="email" id="cli-email" required>
+        </div>
+        <div class="form-group">
+          <label>Servidor:</label>
+          <select id="cli-servidor" required></select>
+        </div>
+        <div class="form-group">
+          <label>Plano:</label>
+          <select id="cli-plano" required onchange="atualizarValor()"></select>
+        </div>
+        <div class="form-group">
+          <label>Vencimento:</label>
+          <input type="date" id="cli-vencimento" required>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="btn" onclick="fecharModal('modal-cliente')">Cancelar</button>
+          <button type="submit" class="btn btn-success">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-servidor" class="modal">
+    <div class="modal-content">
+      <h3>Novo Servidor</h3>
+      <form id="form-servidor">
+        <div class="form-group">
+          <label>Nome:</label>
+          <input type="text" id="srv-nome" required>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="btn" onclick="fecharModal('modal-servidor')">Cancelar</button>
+          <button type="submit" class="btn btn-success">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-plano" class="modal">
+    <div class="modal-content">
+      <h3>Novo Plano</h3>
+      <form id="form-plano">
+        <div class="form-group">
+          <label>Nome:</label>
+          <input type="text" id="plano-nome" required>
+        </div>
+        <div class="form-group">
+          <label>Valor (R$):</label>
+          <input type="number" id="plano-valor" step="0.01" required>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="btn" onclick="fecharModal('modal-plano')">Cancelar</button>
+          <button type="submit" class="btn btn-success">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB5Y2BMqHIBDAhZoHFwDzdG-UuvPR1-FcQ",
+      authDomain: "gestor-22b13.firebaseapp.com",
+      databaseURL: "https://gestor-22b13-default-rtdb.firebaseio.com",
+      projectId: "gestor-22b13",
+      storageBucket: "gestor-22b13.firebasestorage.app",
+      messagingSenderId: "124521158946",
+      appId: "1:124521158946:web:06ea51762e01c571512d7b"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let clientes = {};
+    let servidores = {};
+    let planos = {};
+    let clienteEditando = null;
+    let clientesSelecionados = new Set();
+
+    // VERIFICAR LOGIN
+    if (localStorage.getItem('auth') !== 'ok') {
+      window.location.href = 'index.html';
+    }
+
+    // LOGOUT
+    function logout() {
+      localStorage.removeItem('auth');
+      window.location.href = 'index.html';
+    }
+
+    // CARREGAR DADOS
+    async function carregarDados() {
+      try {
+        const [snapshotCli, snapshotSrv, snapshotPln] = await Promise.all([
+          db.ref('clientes').once('value'),
+          db.ref('servidores').once('value'),
+          db.ref('planos').once('value')
+        ]);
+
+        clientes = snapshotCli.val() || {};
+        servidores = snapshotSrv.val() || {};
+        planos = snapshotPln.val() || {};
+
+        atualizarUI();
+      } catch (err) {
+        mostrarToast('Erro ao carregar dados', true);
+      }
+    }
+
+    function atualizarUI() {
+      renderizarClientes();
+      renderizarServidores();
+      renderizarPlanos();
+      renderizarCobranca();
+      renderizarFinanceiro();
+      atualizarResumos();
+    }
+
+    // RESUMOS
+    function atualizarResumos() {
+      let ativos = 0, vencendo = 0, hoje = 0, vencido = 0;
+      const agora = new Date();
+
+      Object.values(clientes).forEach(c => {
+        if (!c.vencimento) return;
+        const venc = new Date(c.vencimento);
+        const dias = Math.round((venc - agora) / (1000 * 60 * 60 * 24));
+
+        if (dias >= 4) ativos++;
+        else if (dias >= 1 && dias <= 3) vencendo++;
+        else if (dias === 0) hoje++;
+        else vencido++;
+      });
+
+      document.getElementById('total-ativos').textContent = ativos;
+      document.getElementById('total-vencendo').textContent = vencendo;
+      document.getElementById('total-hoje').textContent = hoje;
+      document.getElementById('total-vencido').textContent = vencido;
+
+      document.getElementById('cobranca-vencendo').textContent = vencendo;
+      document.getElementById('cobranca-hoje').textContent = hoje;
+      document.getElementById('cobranca-vencido').textContent = vencido;
+    }
+
+    // RENDERIZAR CLIENTES
+    function renderizarClientes() {
+      const busca = document.getElementById('busca')?.value.toLowerCase() || '';
+      const tbody = document.getElementById('tabela-clientes');
+      tbody.innerHTML = '';
+
+      Object.entries(clientes)
+        .filter(([_, c]) => c.nome?.toLowerCase().includes(busca))
+        .forEach(([id, c]) => {
+          const dias = Math.round((new Date(c.vencimento) - new Date()) / (1000 * 60 * 60 * 24));
+          let status, badge;
+          if (dias >= 4) { status = 'Ativo'; badge = 'badge-ativo'; }
+          else if (dias >= 1 && dias <= 3) { status = 'Vencendo'; badge = 'badge-vencendo'; }
+          else if (dias === 0) { status = 'Hoje'; badge = 'badge-vencendo'; }
+          else { status = 'Vencido'; badge = 'badge-vencido'; }
+
+          tbody.innerHTML += `
+            <tr>
+              <td>${c.nome}</td>
+              <td>${c.whatsapp}</td>
+              <td>${c.email}</td>
+              <td>${c.servidor}</td>
+              <td>${c.plano}</td>
+              <td>${c.vencimento}</td>
+              <td><span class="badge ${badge}">${status}</span></td>
+              <td>
+                <button class="btn btn-small" onclick="editarCliente('${id}')">✏️ Editar</button>
+                <button class="btn btn-small btn-danger" onclick="deletarCliente('${id}')">🗑️ Deletar</button>
+              </td>
+            </tr>
+          `;
+        });
+    }
+
+    function renderizarServidores() {
+      const tbody = document.getElementById('tabela-servidores');
+      tbody.innerHTML = '';
+      Object.entries(servidores).forEach(([id, s]) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${s.nome}</td>
+            <td>
+              <button class="btn btn-small btn-danger" onclick="deletarServidor('${id}')">🗑️ Deletar</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderizarPlanos() {
+      const tbody = document.getElementById('tabela-planos');
+      tbody.innerHTML = '';
+      Object.entries(planos).forEach(([id, p]) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${p.nome}</td>
+            <td>R$ ${parseFloat(p.valor).toFixed(2)}</td>
+            <td>
+              <button class="btn btn-small btn-danger" onclick="deletarPlano('${id}')">🗑️ Deletar</button>
+            </td>
+          </tr>
+        `;
+      });
+      atualizarSelectPlanos();
+    }
+
+    function renderizarCobranca() {
+      const tbody = document.getElementById('tabela-cobranca');
+      tbody.innerHTML = '';
+
+      Object.entries(clientes).forEach(([id, c]) => {
+        if (!c.vencimento) return;
+        const dias = Math.round((new Date(c.vencimento) - new Date()) / (1000 * 60 * 60 * 24));
+        if (dias > 3) return; // Só mostra vencendo/hoje/vencido
+
+        tbody.innerHTML += `
+          <tr>
+            <td><input type="checkbox" value="${id}" onchange="selecionarCliente('${id}')"></td>
+            <td>${c.nome}</td>
+            <td>${c.whatsapp}</td>
+            <td>${c.email}</td>
+            <td>${c.vencimento}</td>
+            <td>
+              <button class="btn btn-small" onclick="renovarCliente('${id}')">🔄 Renovar</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderizarFinanceiro() {
+      const tbody = document.getElementById('tabela-financeiro');
+      tbody.innerHTML = '';
+
+      db.ref('renovacoes').once('value', (snapshot) => {
+        const renovacoes = snapshot.val() || {};
+        Object.values(renovacoes)
+          .sort((a, b) => new Date(b.data) - new Date(a.data))
+          .slice(0, 50)
+          .forEach(r => {
+            tbody.innerHTML += `
+              <tr>
+                <td>${r.data}</td>
+                <td>${r.clienteNome}</td>
+                <td>R$ ${parseFloat(r.valor).toFixed(2)}</td>
+                <td>${r.novoVencimento}</td>
+              </tr>
+            `;
+          });
+      });
+
+      // Calcular receita
+      let receita_ativa = 0, receita_vencendo = 0, receita_vencida = 0;
+      const agora = new Date();
+
+      Object.values(clientes).forEach(c => {
+        if (!c.vencimento || !c.valorPlano) return;
+        const valor = parseFloat(c.valorPlano);
+        const dias = Math.round((new Date(c.vencimento) - agora) / (1000 * 60 * 60 * 24));
+
+        if (dias >= 4) receita_ativa += valor;
+        else if (dias >= 1) receita_vencendo += valor;
+        else receita_vencida += valor;
+      });
+
+      document.getElementById('receita-ativa').textContent = `R$ ${receita_ativa.toFixed(2)}`;
+      document.getElementById('receita-vencendo').textContent = `R$ ${receita_vencendo.toFixed(2)}`;
+      document.getElementById('receita-vencida').textContent = `R$ ${receita_vencida.toFixed(2)}`;
+      document.getElementById('receita-mes').textContent = `R$ ${(receita_ativa + receita_vencendo + receita_vencida).toFixed(2)}`;
+    }
+
+    // MODAIS
+    function abrirModalCliente() {
+      clienteEditando = null;
+      document.getElementById('titulo-modal').textContent = 'Novo Cliente';
+      document.getElementById('form-cliente').reset();
+      document.getElementById('modal-cliente').classList.add('active');
+      atualizarSelectServidores();
+      atualizarSelectPlanos();
+    }
+
+    function editarCliente(id) {
+      clienteEditando = id;
+      const c = clientes[id];
+      document.getElementById('titulo-modal').textContent = 'Editar Cliente';
+      document.getElementById('cli-nome').value = c.nome;
+      document.getElementById('cli-whatsapp').value = c.whatsapp;
+      document.getElementById('cli-email').value = c.email;
+      document.getElementById('cli-servidor').value = c.servidor;
+      document.getElementById('cli-plano').value = c.plano;
+      document.getElementById('cli-vencimento').value = c.vencimento;
+      document.getElementById('modal-cliente').classList.add('active');
+      atualizarSelectServidores();
+      atualizarSelectPlanos();
+    }
+
+    function abrirModalServidor() {
+      document.getElementById('form-servidor').reset();
+      document.getElementById('modal-servidor').classList.add('active');
+    }
+
+    function abrirModalPlano() {
+      document.getElementById('form-plano').reset();
+      document.getElementById('modal-plano').classList.add('active');
+    }
+
+    function fecharModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // SALVAR
+    document.getElementById('form-cliente').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const dados = {
+        nome: document.getElementById('cli-nome').value,
+        whatsapp: document.getElementById('cli-whatsapp').value,
+        email: document.getElementById('cli-email').value,
+        servidor: document.getElementById('cli-servidor').value,
+        plano: document.getElementById('cli-plano').value,
+        vencimento: document.getElementById('cli-vencimento').value,
+        valorPlano: document.getElementById('cli-plano').selectedOptions[0]?.dataset.valor || '0'
+      };
+
+      const id = clienteEditando || 'cli_' + Date.now();
+      try {
+        await db.ref(`clientes/${id}`).set(dados);
+
+        // Registrar no financeiro se for novo
+        if (!clienteEditando) {
+          const hoje = new Date().toISOString().split('T')[0];
+          await db.ref(`renovacoes/ren_${Date.now()}`).set({
+            clienteId: id,
+            clienteNome: dados.nome,
+            valor: dados.valorPlano,
+            data: hoje,
+            novoVencimento: dados.vencimento,
+            tipo: 'cadastro'
+          });
+        }
+
+        clientes[id] = dados;
+        fecharModal('modal-cliente');
+        atualizarUI();
+        mostrarToast('✅ Cliente salvo!');
+      } catch (err) {
+        mostrarToast('Erro ao salvar', true);
+      }
+    });
+
+    document.getElementById('form-servidor').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = 'srv_' + Date.now();
+      const nome = document.getElementById('srv-nome').value;
+      try {
+        await db.ref(`servidores/${id}`).set({ nome });
+        servidores[id] = { nome };
+        fecharModal('modal-servidor');
+        renderizarServidores();
+        atualizarSelectServidores();
+        mostrarToast('✅ Servidor salvo!');
+      } catch (err) {
+        mostrarToast('Erro ao salvar', true);
+      }
+    });
+
+    document.getElementById('form-plano').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = 'pln_' + Date.now();
+      const dados = {
+        nome: document.getElementById('plano-nome').value,
+        valor: document.getElementById('plano-valor').value
+      };
+      try {
+        await db.ref(`planos/${id}`).set(dados);
+        planos[id] = dados;
+        fecharModal('modal-plano');
+        renderizarPlanos();
+        mostrarToast('✅ Plano salvo!');
+      } catch (err) {
+        mostrarToast('Erro ao salvar', true);
+      }
+    });
+
+    // DELETAR
+    async function deletarCliente(id) {
+      if (!confirm('Deletar este cliente?')) return;
+      try {
+        await db.ref(`clientes/${id}`).remove();
+        delete clientes[id];
+        atualizarUI();
+        mostrarToast('✅ Cliente deletado!');
+      } catch (err) {
+        mostrarToast('Erro ao deletar', true);
+      }
+    }
+
+    async function deletarServidor(id) {
+      if (!confirm('Deletar este servidor?')) return;
+      try {
+        await db.ref(`servidores/${id}`).remove();
+        delete servidores[id];
+        renderizarServidores();
+        atualizarSelectServidores();
+        mostrarToast('✅ Servidor deletado!');
+      } catch (err) {
+        mostrarToast('Erro ao deletar', true);
+      }
+    }
+
+    async function deletarPlano(id) {
+      if (!confirm('Deletar este plano?')) return;
+      try {
+        await db.ref(`planos/${id}`).remove();
+        delete planos[id];
+        renderizarPlanos();
+        mostrarToast('✅ Plano deletado!');
+      } catch (err) {
+        mostrarToast('Erro ao deletar', true);
+      }
+    }
+
+    // SELECTS
+    function atualizarSelectServidores() {
+      const sel = document.getElementById('cli-servidor');
+      sel.innerHTML = '<option>Selecionar servidor...</option>';
+      Object.values(servidores).forEach((s, i) => {
+        sel.innerHTML += `<option>${s.nome}</option>`;
+      });
+    }
+
+    function atualizarSelectPlanos() {
+      const sel = document.getElementById('cli-plano');
+      sel.innerHTML = '<option>Selecionar plano...</option>';
+      Object.entries(planos).forEach(([id, p]) => {
+        sel.innerHTML += `<option data-valor="${p.valor}">${p.nome}</option>`;
+      });
+    }
+
+    function atualizarValor() {
+      const sel = document.getElementById('cli-plano');
+      const valor = sel.selectedOptions[0]?.dataset.valor;
+      // Mostra o valor selecionado
+    }
+
+    // COBRANÇA
+    function selecionarCliente(id) {
+      const chk = document.querySelector(`input[value="${id}"]`);
+      if (chk.checked) clientesSelecionados.add(id);
+      else clientesSelecionados.delete(id);
+    }
+
+    function selecionarTodos() {
+      const chk = document.getElementById('check-todos');
+      const checks = document.querySelectorAll('#tabela-cobranca input[type="checkbox"]');
+      checks.forEach(c => {
+        c.checked = chk.checked;
+        selecionarCliente(c.value);
+      });
+    }
+
+    async function enviarNotificacoes() {
+      if (clientesSelecionados.size === 0) {
+        mostrarToast('Selecione clientes!', true);
+        return;
+      }
+
+      const tipo = document.getElementById('tipo-notif').value;
+      const msg = document.getElementById('msg-notif').value;
+
+      if (!msg) {
+        mostrarToast('Digite uma mensagem!', true);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/enviar-manual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ids: Array.from(clientesSelecionados),
+            canal: tipo,
+            mensagem: msg
+          })
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+          mostrarToast(`✅ Enviado para ${data.enviados} cliente(s)!`);
+          document.getElementById('msg-notif').value = '';
+          clientesSelecionados.clear();
+        } else {
+          mostrarToast('Erro ao enviar', true);
+        }
+      } catch (err) {
+        mostrarToast('Erro na requisição', true);
+      }
+    }
+
+    function listarVencendo(tipo) {
+      // Filtrar e mostrar apenas clientes vencendo
+      const busca = document.getElementById('busca');
+      busca.value = '';
+      renderizarCobranca();
+    }
+
+    async function renovarCliente(id) {
+      const novaData = prompt('Nova data de vencimento (YYYY-MM-DD):');
+      if (!novaData) return;
+
+      try {
+        await db.ref(`clientes/${id}/vencimento`).set(novaData);
+
+        const c = clientes[id];
+        await db.ref(`renovacoes/ren_${Date.now()}`).set({
+          clienteId: id,
+          clienteNome: c.nome,
+          valor: c.valorPlano,
+          data: new Date().toISOString().split('T')[0],
+          novoVencimento: novaData,
+          tipo: 'renovacao'
+        });
+
+        clientes[id].vencimento = novaData;
+        atualizarUI();
+        mostrarToast('✅ Cliente renovado!');
+      } catch (err) {
+        mostrarToast('Erro ao renovar', true);
+      }
+    }
+
+    // ABAS
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    function abaCli entes() {
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.getElementById('tab-clientes').classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach((b, i) => i > 0 && b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach((t, i) => i > 0 && t.classList.remove('active'));
+    }
+
+    function abaServidores() {
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.getElementById('tab-servidores').classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach((b, i) => i !== 1 && b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach((t, i) => i !== 1 && t.classList.remove('active'));
+    }
+
+    function abaPlanos() {
+      document.querySelectorAll('.tab-btn')[2].classList.add('active');
+      document.getElementById('tab-planos').classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach((b, i) => i !== 2 && b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach((t, i) => i !== 2 && t.classList.remove('active'));
+    }
+
+    function abaCobranca() {
+      document.querySelectorAll('.tab-btn')[3].classList.add('active');
+      document.getElementById('tab-cobranca').classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach((b, i) => i !== 3 && b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach((t, i) => i !== 3 && t.classList.remove('active'));
+    }
+
+    function abaFinanceiro() {
+      document.querySelectorAll('.tab-btn')[4].classList.add('active');
+      document.getElementById('tab-financeiro').classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach((b, i) => i !== 4 && b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach((t, i) => i !== 4 && t.classList.remove('active'));
+    }
+
+    // TOAST
+    function mostrarToast(msg, erro = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.toggle('error', erro);
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // INIT
+    carregarDados();
+    setInterval(atualizarResumos, 60000);
+  </script>
+</body>
+</html>

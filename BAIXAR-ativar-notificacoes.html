@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ativar Notificações</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-width: 500px; width: 100%; text-align: center; }
+    h1 { color: #333; margin-bottom: 20px; }
+    p { color: #666; margin-bottom: 30px; line-height: 1.6; }
+    .btn { padding: 15px 30px; background: #667eea; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin: 10px; transition: background 0.3s; }
+    .btn:hover { background: #764ba2; }
+    .status { margin-top: 30px; padding: 20px; border-radius: 5px; display: none; }
+    .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status.loading { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔔 Ativar Notificações</h1>
+    <p>Clique no botão abaixo para ativar notificações de vencimento do seu plano e receba avisos de renovação via push notification e email.</p>
+    
+    <button class="btn" onclick="ativarNotificacoes()">🔔 Ativar Notificações</button>
+    
+    <div id="status" class="status"></div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB5Y2BMqHIBDAhZoHFwDzdG-UuvPR1-FcQ",
+      authDomain: "gestor-22b13.firebaseapp.com",
+      databaseURL: "https://gestor-22b13-default-rtdb.firebaseio.com",
+      projectId: "gestor-22b13",
+      storageBucket: "gestor-22b13.firebasestorage.app",
+      messagingSenderId: "124521158946",
+      appId: "1:124521158946:web:06ea51762e01c571512d7b"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const messaging = firebase.messaging();
+
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('firebase-messaging-sw.js').catch(err => {
+        console.log('Service Worker registration failed:', err);
+      });
+    }
+
+    // Pegar ID da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const clienteId = urlParams.get('id');
+
+    async function ativarNotificacoes() {
+      const status = document.getElementById('status');
+
+      if (!clienteId) {
+        status.textContent = '❌ ID do cliente não encontrado!';
+        status.classList.add('error');
+        status.style.display = 'block';
+        return;
+      }
+
+      try {
+        status.textContent = '⏳ Solicitando permissão...';
+        status.classList.remove('success', 'error');
+        status.classList.add('loading');
+        status.style.display = 'block';
+
+        // Solicitar permissão
+        const permission = await Notification.requestPermission();
+
+        if (permission === 'granted') {
+          // Obter FCM Token
+          const token = await messaging.getToken({
+            vapidKey: 'BH4XFOg4RddXU-xPuEh3Loli2QiGk1XuXhX4K9jmDajsdMf3DkfgLJUcZ6Rhy62-KjZ7FKpbGyiS5YnTwUA5D9w'
+          });
+
+          if (token) {
+            // Salvar no Firebase
+            await db.ref(`clientes/${clienteId}/fcmToken`).set(token);
+
+            status.textContent = '✅ Notificações ativadas com sucesso! Você receberá avisos de vencimento via push notification e email.';
+            status.classList.remove('loading', 'error');
+            status.classList.add('success');
+            status.style.display = 'block';
+
+            // Mostrar notificação de teste
+            setTimeout(() => {
+              new Notification('Notificações Ativadas!', {
+                body: 'Você receberá avisos de vencimento do seu plano.',
+                icon: '/icon-192.png'
+              });
+            }, 1000);
+          } else {
+            throw new Error('Não foi possível obter o token FCM');
+          }
+        } else {
+          status.textContent = '❌ Você negou a permissão de notificações. Por favor, ative nas configurações do navegador.';
+          status.classList.remove('loading', 'success');
+          status.classList.add('error');
+          status.style.display = 'block';
+        }
+      } catch (err) {
+        status.textContent = '❌ Erro ao ativar notificações: ' + err.message;
+        status.classList.remove('loading', 'success');
+        status.classList.add('error');
+        status.style.display = 'block';
+      }
+    }
+
+    // Ouvir mensagens
+    messaging.onMessage((payload) => {
+      console.log('Mensagem recebida:', payload);
+      new Notification(payload.notification.title, {
+        body: payload.notification.body,
+        icon: '/icon-192.png'
+      });
+    });
+  </script>
+</body>
+</html>

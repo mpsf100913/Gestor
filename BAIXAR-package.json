@@ -1,0 +1,14 @@
+{
+  "name": "gestor-iptv-novo",
+  "version": "2.0.0",
+  "description": "Sistema de Cobrança IPTV - Completo",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "resend": "^3.0.0",
+    "axios": "^1.6.0"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
